@@ -1,0 +1,196 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE fcpxml>
+<fcpxml version="1.8">
+  <resources>
+    <format id="fmt" name="FFVideoFormat3840x2160p30" frameDuration="1/30s" width="3840" height="2160" colorSpace="1-1-1 (Rec. 709)" />
+    <format id="fmt1" width="3840" height="2160" frameDuration="1/30s" colorSpace="1-1-1 (Rec. 709)" />
+    <asset id="asset1" name="口播粗剪.mp4" src="file:///Users/sniper/work/0%E8%87%AA%E5%AA%92%E4%BD%93/%E8%87%AA%E5%AA%92%E4%BD%93%E9%A1%B9%E7%9B%AE/1008-%E9%86%8D%E9%86%90%E6%B5%8B%E8%AF%95/%E4%BA%A4%E4%BB%98/%E5%88%86%E9%95%9C%E7%B4%A0%E6%9D%90%E5%B7%A5%E7%A8%8B/%E5%8F%A3%E6%92%AD%E7%B2%97%E5%89%AA.mp4" start="0s" duration="6224/30s" hasVideo="1" hasAudio="1" format="fmt1" audioSources="1" audioChannels="2" audioRate="48000" />
+    <format id="fmt2" width="1280" height="720" frameDuration="1/30s" colorSpace="1-1-1 (Rec. 709)" />
+    <asset id="asset2" name="03_01_选用片段.mp4" src="file:///Users/sniper/work/0%E8%87%AA%E5%AA%92%E4%BD%93/%E8%87%AA%E5%AA%92%E4%BD%93%E9%A1%B9%E7%9B%AE/1008-%E9%86%8D%E9%86%90%E6%B5%8B%E8%AF%95/%E4%BA%A4%E4%BB%98/%E5%88%86%E9%95%9C%E7%B4%A0%E6%9D%90%E5%B7%A5%E7%A8%8B/%E5%89%AA%E8%BE%91%E7%B4%A0%E6%9D%90/03_01_%E9%80%89%E7%94%A8%E7%89%87%E6%AE%B5.mp4" start="0s" duration="115/30s" hasVideo="1" hasAudio="0" format="fmt2" />
+    <format id="fmt3" width="1720" height="968" frameDuration="1/30s" colorSpace="1-1-1 (Rec. 709)" />
+    <asset id="asset3" name="04_02_选用片段.mp4" src="file:///Users/sniper/work/0%E8%87%AA%E5%AA%92%E4%BD%93/%E8%87%AA%E5%AA%92%E4%BD%93%E9%A1%B9%E7%9B%AE/1008-%E9%86%8D%E9%86%90%E6%B5%8B%E8%AF%95/%E4%BA%A4%E4%BB%98/%E5%88%86%E9%95%9C%E7%B4%A0%E6%9D%90%E5%B7%A5%E7%A8%8B/%E5%89%AA%E8%BE%91%E7%B4%A0%E6%9D%90/04_02_%E9%80%89%E7%94%A8%E7%89%87%E6%AE%B5.mp4" start="0s" duration="104/30s" hasVideo="1" hasAudio="0" format="fmt3" />
+    <format id="fmt4" width="1974" height="1080" frameDuration="1/30s" colorSpace="1-1-1 (Rec. 709)" />
+    <asset id="asset4" name="05_03_选用片段.mp4" src="file:///Users/sniper/work/0%E8%87%AA%E5%AA%92%E4%BD%93/%E8%87%AA%E5%AA%92%E4%BD%93%E9%A1%B9%E7%9B%AE/1008-%E9%86%8D%E9%86%90%E6%B5%8B%E8%AF%95/%E4%BA%A4%E4%BB%98/%E5%88%86%E9%95%9C%E7%B4%A0%E6%9D%90%E5%B7%A5%E7%A8%8B/%E5%89%AA%E8%BE%91%E7%B4%A0%E6%9D%90/05_03_%E9%80%89%E7%94%A8%E7%89%87%E6%AE%B5.mp4" start="0s" duration="200/30s" hasVideo="1" hasAudio="0" format="fmt4" />
+    <format id="fmt5" width="1280" height="720" frameDuration="1/30s" colorSpace="1-1-1 (Rec. 709)" />
+    <asset id="asset5" name="06_B站_19-24秒.mp4" src="file:///Users/sniper/work/0%E8%87%AA%E5%AA%92%E4%BD%93/%E8%87%AA%E5%AA%92%E4%BD%93%E9%A1%B9%E7%9B%AE/1008-%E9%86%8D%E9%86%90%E6%B5%8B%E8%AF%95/%E4%BA%A4%E4%BB%98/%E5%88%86%E9%95%9C%E7%B4%A0%E6%9D%90%E5%B7%A5%E7%A8%8B/%E7%B4%A0%E6%9D%90/06_B%E7%AB%99_19-24%E7%A7%92.mp4" start="0s" duration="150/30s" hasVideo="1" hasAudio="1" format="fmt5" audioSources="1" audioChannels="2" audioRate="48000" />
+    <format id="fmt6" width="1920" height="1080" frameDuration="1/30s" colorSpace="1-1-1 (Rec. 709)" />
+    <asset id="asset6" name="07_05_选用片段.mp4" src="file:///Users/sniper/work/0%E8%87%AA%E5%AA%92%E4%BD%93/%E8%87%AA%E5%AA%92%E4%BD%93%E9%A1%B9%E7%9B%AE/1008-%E9%86%8D%E9%86%90%E6%B5%8B%E8%AF%95/%E4%BA%A4%E4%BB%98/%E5%88%86%E9%95%9C%E7%B4%A0%E6%9D%90%E5%B7%A5%E7%A8%8B/%E5%89%AA%E8%BE%91%E7%B4%A0%E6%9D%90/07_05_%E9%80%89%E7%94%A8%E7%89%87%E6%AE%B5.mp4" start="0s" duration="183/30s" hasVideo="1" hasAudio="0" format="fmt6" />
+    <format id="fmt7" width="1920" height="1080" frameDuration="1/30s" colorSpace="1-1-1 (Rec. 709)" />
+    <asset id="asset7" name="08_最高档两次失败.png" src="file:///Users/sniper/work/0%E8%87%AA%E5%AA%92%E4%BD%93/%E8%87%AA%E5%AA%92%E4%BD%93%E9%A1%B9%E7%9B%AE/1008-%E9%86%8D%E9%86%90%E6%B5%8B%E8%AF%95/%E4%BA%A4%E4%BB%98/%E5%88%86%E9%95%9C%E7%B4%A0%E6%9D%90%E5%B7%A5%E7%A8%8B/%E5%89%AA%E8%BE%91%E7%B4%A0%E6%9D%90/08_%E6%9C%80%E9%AB%98%E6%A1%A3%E4%B8%A4%E6%AC%A1%E5%A4%B1%E8%B4%A5.png" start="0s" duration="108000/30s" hasVideo="1" hasAudio="0" format="fmt7" />
+    <format id="fmt8" width="886" height="480" frameDuration="1/30s" colorSpace="1-1-1 (Rec. 709)" />
+    <asset id="asset8" name="09_07_选用片段.mp4" src="file:///Users/sniper/work/0%E8%87%AA%E5%AA%92%E4%BD%93/%E8%87%AA%E5%AA%92%E4%BD%93%E9%A1%B9%E7%9B%AE/1008-%E9%86%8D%E9%86%90%E6%B5%8B%E8%AF%95/%E4%BA%A4%E4%BB%98/%E5%88%86%E9%95%9C%E7%B4%A0%E6%9D%90%E5%B7%A5%E7%A8%8B/%E5%89%AA%E8%BE%91%E7%B4%A0%E6%9D%90/09_07_%E9%80%89%E7%94%A8%E7%89%87%E6%AE%B5.mp4" start="0s" duration="90/30s" hasVideo="1" hasAudio="0" format="fmt8" />
+    <format id="fmt9" width="1920" height="1080" frameDuration="1/30s" colorSpace="1-1-1 (Rec. 709)" />
+    <asset id="asset9" name="11_SVG名词解释.png" src="file:///Users/sniper/work/0%E8%87%AA%E5%AA%92%E4%BD%93/%E8%87%AA%E5%AA%92%E4%BD%93%E9%A1%B9%E7%9B%AE/1008-%E9%86%8D%E9%86%90%E6%B5%8B%E8%AF%95/%E4%BA%A4%E4%BB%98/%E5%88%86%E9%95%9C%E7%B4%A0%E6%9D%90%E5%B7%A5%E7%A8%8B/%E5%89%AA%E8%BE%91%E7%B4%A0%E6%9D%90/11_SVG%E5%90%8D%E8%AF%8D%E8%A7%A3%E9%87%8A.png" start="0s" duration="108000/30s" hasVideo="1" hasAudio="0" format="fmt9" />
+    <format id="fmt10" width="1920" height="1080" frameDuration="1/30s" colorSpace="1-1-1 (Rec. 709)" />
+    <asset id="asset10" name="12_西蒙与测试起源.png" src="file:///Users/sniper/work/0%E8%87%AA%E5%AA%92%E4%BD%93/%E8%87%AA%E5%AA%92%E4%BD%93%E9%A1%B9%E7%9B%AE/1008-%E9%86%8D%E9%86%90%E6%B5%8B%E8%AF%95/%E4%BA%A4%E4%BB%98/%E5%88%86%E9%95%9C%E7%B4%A0%E6%9D%90%E5%B7%A5%E7%A8%8B/%E5%89%AA%E8%BE%91%E7%B4%A0%E6%9D%90/12_%E8%A5%BF%E8%92%99%E4%B8%8E%E6%B5%8B%E8%AF%95%E8%B5%B7%E6%BA%90.png" start="0s" duration="108000/30s" hasVideo="1" hasAudio="0" format="fmt10" />
+    <format id="fmt11" width="603" height="351" frameDuration="1/30s" colorSpace="1-1-1 (Rec. 709)" />
+    <asset id="asset11" name="12_C01_参考图.png" src="file:///Users/sniper/work/0%E8%87%AA%E5%AA%92%E4%BD%93/%E8%87%AA%E5%AA%92%E4%BD%93%E9%A1%B9%E7%9B%AE/1008-%E9%86%8D%E9%86%90%E6%B5%8B%E8%AF%95/%E4%BA%A4%E4%BB%98/%E5%88%86%E9%95%9C%E7%B4%A0%E6%9D%90%E5%B7%A5%E7%A8%8B/%E7%B4%A0%E6%9D%90/12_C01_%E5%8F%82%E8%80%83%E5%9B%BE.png" start="0s" duration="108000/30s" hasVideo="1" hasAudio="0" format="fmt11" />
+    <format id="fmt12" width="1600" height="1600" frameDuration="1/30s" colorSpace="1-1-1 (Rec. 709)" />
+    <asset id="asset12" name="12_网页原图_01.png" src="file:///Users/sniper/work/0%E8%87%AA%E5%AA%92%E4%BD%93/%E8%87%AA%E5%AA%92%E4%BD%93%E9%A1%B9%E7%9B%AE/1008-%E9%86%8D%E9%86%90%E6%B5%8B%E8%AF%95/%E4%BA%A4%E4%BB%98/%E5%88%86%E9%95%9C%E7%B4%A0%E6%9D%90%E5%B7%A5%E7%A8%8B/%E5%89%AA%E8%BE%91%E7%B4%A0%E6%9D%90/12_%E7%BD%91%E9%A1%B5%E5%8E%9F%E5%9B%BE_01.png" start="0s" duration="108000/30s" hasVideo="1" hasAudio="0" format="fmt12" />
+    <format id="fmt13" width="1600" height="1600" frameDuration="1/30s" colorSpace="1-1-1 (Rec. 709)" />
+    <asset id="asset13" name="12_网页原图_04.png" src="file:///Users/sniper/work/0%E8%87%AA%E5%AA%92%E4%BD%93/%E8%87%AA%E5%AA%92%E4%BD%93%E9%A1%B9%E7%9B%AE/1008-%E9%86%8D%E9%86%90%E6%B5%8B%E8%AF%95/%E4%BA%A4%E4%BB%98/%E5%88%86%E9%95%9C%E7%B4%A0%E6%9D%90%E5%B7%A5%E7%A8%8B/%E5%89%AA%E8%BE%91%E7%B4%A0%E6%9D%90/12_%E7%BD%91%E9%A1%B5%E5%8E%9F%E5%9B%BE_04.png" start="0s" duration="108000/30s" hasVideo="1" hasAudio="0" format="fmt13" />
+    <format id="fmt14" width="1600" height="1600" frameDuration="1/30s" colorSpace="1-1-1 (Rec. 709)" />
+    <asset id="asset14" name="12_网页原图_05.png" src="file:///Users/sniper/work/0%E8%87%AA%E5%AA%92%E4%BD%93/%E8%87%AA%E5%AA%92%E4%BD%93%E9%A1%B9%E7%9B%AE/1008-%E9%86%8D%E9%86%90%E6%B5%8B%E8%AF%95/%E4%BA%A4%E4%BB%98/%E5%88%86%E9%95%9C%E7%B4%A0%E6%9D%90%E5%B7%A5%E7%A8%8B/%E5%89%AA%E8%BE%91%E7%B4%A0%E6%9D%90/12_%E7%BD%91%E9%A1%B5%E5%8E%9F%E5%9B%BE_05.png" start="0s" duration="108000/30s" hasVideo="1" hasAudio="0" format="fmt14" />
+    <format id="fmt15" width="1600" height="1600" frameDuration="1/30s" colorSpace="1-1-1 (Rec. 709)" />
+    <asset id="asset15" name="12_网页原图_09.png" src="file:///Users/sniper/work/0%E8%87%AA%E5%AA%92%E4%BD%93/%E8%87%AA%E5%AA%92%E4%BD%93%E9%A1%B9%E7%9B%AE/1008-%E9%86%8D%E9%86%90%E6%B5%8B%E8%AF%95/%E4%BA%A4%E4%BB%98/%E5%88%86%E9%95%9C%E7%B4%A0%E6%9D%90%E5%B7%A5%E7%A8%8B/%E5%89%AA%E8%BE%91%E7%B4%A0%E6%9D%90/12_%E7%BD%91%E9%A1%B5%E5%8E%9F%E5%9B%BE_09.png" start="0s" duration="108000/30s" hasVideo="1" hasAudio="0" format="fmt15" />
+    <format id="fmt16" width="1600" height="1600" frameDuration="1/30s" colorSpace="1-1-1 (Rec. 709)" />
+    <asset id="asset16" name="12_网页原图_11.png" src="file:///Users/sniper/work/0%E8%87%AA%E5%AA%92%E4%BD%93/%E8%87%AA%E5%AA%92%E4%BD%93%E9%A1%B9%E7%9B%AE/1008-%E9%86%8D%E9%86%90%E6%B5%8B%E8%AF%95/%E4%BA%A4%E4%BB%98/%E5%88%86%E9%95%9C%E7%B4%A0%E6%9D%90%E5%B7%A5%E7%A8%8B/%E5%89%AA%E8%BE%91%E7%B4%A0%E6%9D%90/12_%E7%BD%91%E9%A1%B5%E5%8E%9F%E5%9B%BE_11.png" start="0s" duration="108000/30s" hasVideo="1" hasAudio="0" format="fmt16" />
+    <format id="fmt17" width="1920" height="1080" frameDuration="1/30s" colorSpace="1-1-1 (Rec. 709)" />
+    <asset id="asset17" name="14_抽象组合.png" src="file:///Users/sniper/work/0%E8%87%AA%E5%AA%92%E4%BD%93/%E8%87%AA%E5%AA%92%E4%BD%93%E9%A1%B9%E7%9B%AE/1008-%E9%86%8D%E9%86%90%E6%B5%8B%E8%AF%95/%E4%BA%A4%E4%BB%98/%E5%88%86%E9%95%9C%E7%B4%A0%E6%9D%90%E5%B7%A5%E7%A8%8B/%E5%89%AA%E8%BE%91%E7%B4%A0%E6%9D%90/14_%E6%8A%BD%E8%B1%A1%E7%BB%84%E5%90%88.png" start="0s" duration="108000/30s" hasVideo="1" hasAudio="0" format="fmt17" />
+    <format id="fmt18" width="640" height="360" frameDuration="1/30s" colorSpace="1-1-1 (Rec. 709)" />
+    <asset id="asset18" name="15_B站_11-20秒.mp4" src="file:///Users/sniper/work/0%E8%87%AA%E5%AA%92%E4%BD%93/%E8%87%AA%E5%AA%92%E4%BD%93%E9%A1%B9%E7%9B%AE/1008-%E9%86%8D%E9%86%90%E6%B5%8B%E8%AF%95/%E4%BA%A4%E4%BB%98/%E5%88%86%E9%95%9C%E7%B4%A0%E6%9D%90%E5%B7%A5%E7%A8%8B/%E7%B4%A0%E6%9D%90/15_B%E7%AB%99_11-20%E7%A7%92.mp4" start="0s" duration="270/30s" hasVideo="1" hasAudio="1" format="fmt18" audioSources="1" audioChannels="2" audioRate="44100" />
+    <format id="fmt19" width="1920" height="1080" frameDuration="1/30s" colorSpace="1-1-1 (Rec. 709)" />
+    <asset id="asset19" name="16_选择鹈鹕的原因.png" src="file:///Users/sniper/work/0%E8%87%AA%E5%AA%92%E4%BD%93/%E8%87%AA%E5%AA%92%E4%BD%93%E9%A1%B9%E7%9B%AE/1008-%E9%86%8D%E9%86%90%E6%B5%8B%E8%AF%95/%E4%BA%A4%E4%BB%98/%E5%88%86%E9%95%9C%E7%B4%A0%E6%9D%90%E5%B7%A5%E7%A8%8B/%E5%89%AA%E8%BE%91%E7%B4%A0%E6%9D%90/16_%E9%80%89%E6%8B%A9%E9%B9%88%E9%B9%95%E7%9A%84%E5%8E%9F%E5%9B%A0.png" start="0s" duration="108000/30s" hasVideo="1" hasAudio="0" format="fmt19" />
+    <format id="fmt20" width="1280" height="720" frameDuration="1/30s" colorSpace="1-1-1 (Rec. 709)" />
+    <asset id="asset20" name="17_19_选用片段.mp4" src="file:///Users/sniper/work/0%E8%87%AA%E5%AA%92%E4%BD%93/%E8%87%AA%E5%AA%92%E4%BD%93%E9%A1%B9%E7%9B%AE/1008-%E9%86%8D%E9%86%90%E6%B5%8B%E8%AF%95/%E4%BA%A4%E4%BB%98/%E5%88%86%E9%95%9C%E7%B4%A0%E6%9D%90%E5%B7%A5%E7%A8%8B/%E5%89%AA%E8%BE%91%E7%B4%A0%E6%9D%90/17_19_%E9%80%89%E7%94%A8%E7%89%87%E6%AE%B5.mp4" start="0s" duration="116/30s" hasVideo="1" hasAudio="0" format="fmt20" />
+    <format id="fmt21" width="1920" height="1080" frameDuration="1/30s" colorSpace="1-1-1 (Rec. 709)" />
+    <asset id="asset21" name="18_20_选用片段.mp4" src="file:///Users/sniper/work/0%E8%87%AA%E5%AA%92%E4%BD%93/%E8%87%AA%E5%AA%92%E4%BD%93%E9%A1%B9%E7%9B%AE/1008-%E9%86%8D%E9%86%90%E6%B5%8B%E8%AF%95/%E4%BA%A4%E4%BB%98/%E5%88%86%E9%95%9C%E7%B4%A0%E6%9D%90%E5%B7%A5%E7%A8%8B/%E5%89%AA%E8%BE%91%E7%B4%A0%E6%9D%90/18_20_%E9%80%89%E7%94%A8%E7%89%87%E6%AE%B5.mp4" start="0s" duration="207/30s" hasVideo="1" hasAudio="0" format="fmt21" />
+    <format id="fmt22" width="640" height="360" frameDuration="1/30s" colorSpace="1-1-1 (Rec. 709)" />
+    <asset id="asset22" name="19_21_选用片段.mp4" src="file:///Users/sniper/work/0%E8%87%AA%E5%AA%92%E4%BD%93/%E8%87%AA%E5%AA%92%E4%BD%93%E9%A1%B9%E7%9B%AE/1008-%E9%86%8D%E9%86%90%E6%B5%8B%E8%AF%95/%E4%BA%A4%E4%BB%98/%E5%88%86%E9%95%9C%E7%B4%A0%E6%9D%90%E5%B7%A5%E7%A8%8B/%E5%89%AA%E8%BE%91%E7%B4%A0%E6%9D%90/19_21_%E9%80%89%E7%94%A8%E7%89%87%E6%AE%B5.mp4" start="0s" duration="207/30s" hasVideo="1" hasAudio="0" format="fmt22" />
+    <format id="fmt23" width="2178" height="1080" frameDuration="1/30s" colorSpace="1-1-1 (Rec. 709)" />
+    <asset id="asset23" name="20_22_选用片段.mp4" src="file:///Users/sniper/work/0%E8%87%AA%E5%AA%92%E4%BD%93/%E8%87%AA%E5%AA%92%E4%BD%93%E9%A1%B9%E7%9B%AE/1008-%E9%86%8D%E9%86%90%E6%B5%8B%E8%AF%95/%E4%BA%A4%E4%BB%98/%E5%88%86%E9%95%9C%E7%B4%A0%E6%9D%90%E5%B7%A5%E7%A8%8B/%E5%89%AA%E8%BE%91%E7%B4%A0%E6%9D%90/20_22_%E9%80%89%E7%94%A8%E7%89%87%E6%AE%B5.mp4" start="0s" duration="251/30s" hasVideo="1" hasAudio="0" format="fmt23" />
+    <format id="fmt24" width="2216" height="1440" frameDuration="1/30s" colorSpace="1-1-1 (Rec. 709)" />
+    <asset id="asset24" name="22_23_选用片段.mp4" src="file:///Users/sniper/work/0%E8%87%AA%E5%AA%92%E4%BD%93/%E8%87%AA%E5%AA%92%E4%BD%93%E9%A1%B9%E7%9B%AE/1008-%E9%86%8D%E9%86%90%E6%B5%8B%E8%AF%95/%E4%BA%A4%E4%BB%98/%E5%88%86%E9%95%9C%E7%B4%A0%E6%9D%90%E5%B7%A5%E7%A8%8B/%E5%89%AA%E8%BE%91%E7%B4%A0%E6%9D%90/22_23_%E9%80%89%E7%94%A8%E7%89%87%E6%AE%B5.mp4" start="0s" duration="106/30s" hasVideo="1" hasAudio="0" format="fmt24" />
+    <format id="fmt25" width="2216" height="1440" frameDuration="1/30s" colorSpace="1-1-1 (Rec. 709)" />
+    <asset id="asset25" name="23_24_选用片段.mp4" src="file:///Users/sniper/work/0%E8%87%AA%E5%AA%92%E4%BD%93/%E8%87%AA%E5%AA%92%E4%BD%93%E9%A1%B9%E7%9B%AE/1008-%E9%86%8D%E9%86%90%E6%B5%8B%E8%AF%95/%E4%BA%A4%E4%BB%98/%E5%88%86%E9%95%9C%E7%B4%A0%E6%9D%90%E5%B7%A5%E7%A8%8B/%E5%89%AA%E8%BE%91%E7%B4%A0%E6%9D%90/23_24_%E9%80%89%E7%94%A8%E7%89%87%E6%AE%B5.mp4" start="0s" duration="205/30s" hasVideo="1" hasAudio="0" format="fmt25" />
+    <format id="fmt26" width="720" height="912" frameDuration="1/30s" colorSpace="1-1-1 (Rec. 709)" />
+    <asset id="asset26" name="24_25_选用片段.mp4" src="file:///Users/sniper/work/0%E8%87%AA%E5%AA%92%E4%BD%93/%E8%87%AA%E5%AA%92%E4%BD%93%E9%A1%B9%E7%9B%AE/1008-%E9%86%8D%E9%86%90%E6%B5%8B%E8%AF%95/%E4%BA%A4%E4%BB%98/%E5%88%86%E9%95%9C%E7%B4%A0%E6%9D%90%E5%B7%A5%E7%A8%8B/%E5%89%AA%E8%BE%91%E7%B4%A0%E6%9D%90/24_25_%E9%80%89%E7%94%A8%E7%89%87%E6%AE%B5.mp4" start="0s" duration="122/30s" hasVideo="1" hasAudio="0" format="fmt26" />
+    <format id="fmt27" width="1920" height="1080" frameDuration="1/30s" colorSpace="1-1-1 (Rec. 709)" />
+    <asset id="asset27" name="25_发明者的提醒.png" src="file:///Users/sniper/work/0%E8%87%AA%E5%AA%92%E4%BD%93/%E8%87%AA%E5%AA%92%E4%BD%93%E9%A1%B9%E7%9B%AE/1008-%E9%86%8D%E9%86%90%E6%B5%8B%E8%AF%95/%E4%BA%A4%E4%BB%98/%E5%88%86%E9%95%9C%E7%B4%A0%E6%9D%90%E5%B7%A5%E7%A8%8B/%E5%89%AA%E8%BE%91%E7%B4%A0%E6%9D%90/25_%E5%8F%91%E6%98%8E%E8%80%85%E7%9A%84%E6%8F%90%E9%86%92.png" start="0s" duration="108000/30s" hasVideo="1" hasAudio="0" format="fmt27" />
+    <format id="fmt28" width="2644" height="1440" frameDuration="1/30s" colorSpace="1-1-1 (Rec. 709)" />
+    <asset id="asset28" name="26_27_选用片段.mp4" src="file:///Users/sniper/work/0%E8%87%AA%E5%AA%92%E4%BD%93/%E8%87%AA%E5%AA%92%E4%BD%93%E9%A1%B9%E7%9B%AE/1008-%E9%86%8D%E9%86%90%E6%B5%8B%E8%AF%95/%E4%BA%A4%E4%BB%98/%E5%88%86%E9%95%9C%E7%B4%A0%E6%9D%90%E5%B7%A5%E7%A8%8B/%E5%89%AA%E8%BE%91%E7%B4%A0%E6%9D%90/26_27_%E9%80%89%E7%94%A8%E7%89%87%E6%AE%B5.mp4" start="0s" duration="158/30s" hasVideo="1" hasAudio="0" format="fmt28" />
+    <format id="fmt29" width="1248" height="1460" frameDuration="1/30s" colorSpace="1-1-1 (Rec. 709)" />
+    <asset id="asset29" name="27_模型对比.png" src="file:///Users/sniper/work/0%E8%87%AA%E5%AA%92%E4%BD%93/%E8%87%AA%E5%AA%92%E4%BD%93%E9%A1%B9%E7%9B%AE/1008-%E9%86%8D%E9%86%90%E6%B5%8B%E8%AF%95/%E4%BA%A4%E4%BB%98/%E5%88%86%E9%95%9C%E7%B4%A0%E6%9D%90%E5%B7%A5%E7%A8%8B/%E5%89%AA%E8%BE%91%E7%B4%A0%E6%9D%90/27_%E6%A8%A1%E5%9E%8B%E5%AF%B9%E6%AF%94.png" start="0s" duration="108000/30s" hasVideo="1" hasAudio="0" format="fmt29" />
+    <format id="fmt30" width="640" height="360" frameDuration="1/30s" colorSpace="1-1-1 (Rec. 709)" />
+    <asset id="asset30" name="28_29_选用片段.mp4" src="file:///Users/sniper/work/0%E8%87%AA%E5%AA%92%E4%BD%93/%E8%87%AA%E5%AA%92%E4%BD%93%E9%A1%B9%E7%9B%AE/1008-%E9%86%8D%E9%86%90%E6%B5%8B%E8%AF%95/%E4%BA%A4%E4%BB%98/%E5%88%86%E9%95%9C%E7%B4%A0%E6%9D%90%E5%B7%A5%E7%A8%8B/%E5%89%AA%E8%BE%91%E7%B4%A0%E6%9D%90/28_29_%E9%80%89%E7%94%A8%E7%89%87%E6%AE%B5.mp4" start="0s" duration="248/30s" hasVideo="1" hasAudio="0" format="fmt30" />
+    <format id="fmt31" width="1600" height="1600" frameDuration="1/30s" colorSpace="1-1-1 (Rec. 709)" />
+    <asset id="asset31" name="12_网页原图_07.png" src="file:///Users/sniper/work/0%E8%87%AA%E5%AA%92%E4%BD%93/%E8%87%AA%E5%AA%92%E4%BD%93%E9%A1%B9%E7%9B%AE/1008-%E9%86%8D%E9%86%90%E6%B5%8B%E8%AF%95/%E4%BA%A4%E4%BB%98/%E5%88%86%E9%95%9C%E7%B4%A0%E6%9D%90%E5%B7%A5%E7%A8%8B/%E5%89%AA%E8%BE%91%E7%B4%A0%E6%9D%90/12_%E7%BD%91%E9%A1%B5%E5%8E%9F%E5%9B%BE_07.png" start="0s" duration="108000/30s" hasVideo="1" hasAudio="0" format="fmt31" />
+    <format id="fmt32" width="1280" height="720" frameDuration="1/30s" colorSpace="1-1-1 (Rec. 709)" />
+    <asset id="asset32" name="29_31_选用片段.mp4" src="file:///Users/sniper/work/0%E8%87%AA%E5%AA%92%E4%BD%93/%E8%87%AA%E5%AA%92%E4%BD%93%E9%A1%B9%E7%9B%AE/1008-%E9%86%8D%E9%86%90%E6%B5%8B%E8%AF%95/%E4%BA%A4%E4%BB%98/%E5%88%86%E9%95%9C%E7%B4%A0%E6%9D%90%E5%B7%A5%E7%A8%8B/%E5%89%AA%E8%BE%91%E7%B4%A0%E6%9D%90/29_31_%E9%80%89%E7%94%A8%E7%89%87%E6%AE%B5.mp4" start="0s" duration="70/30s" hasVideo="1" hasAudio="0" format="fmt32" />
+    <format id="fmt33" width="1920" height="1080" frameDuration="1/30s" colorSpace="1-1-1 (Rec. 709)" />
+    <asset id="asset33" name="29_32_选用片段.mp4" src="file:///Users/sniper/work/0%E8%87%AA%E5%AA%92%E4%BD%93/%E8%87%AA%E5%AA%92%E4%BD%93%E9%A1%B9%E7%9B%AE/1008-%E9%86%8D%E9%86%90%E6%B5%8B%E8%AF%95/%E4%BA%A4%E4%BB%98/%E5%88%86%E9%95%9C%E7%B4%A0%E6%9D%90%E5%B7%A5%E7%A8%8B/%E5%89%AA%E8%BE%91%E7%B4%A0%E6%9D%90/29_32_%E9%80%89%E7%94%A8%E7%89%87%E6%AE%B5.mp4" start="0s" duration="84/30s" hasVideo="1" hasAudio="0" format="fmt33" />
+    <format id="fmt34" width="1920" height="1080" frameDuration="1/30s" colorSpace="1-1-1 (Rec. 709)" />
+    <asset id="asset34" name="30_33_选用片段.mp4" src="file:///Users/sniper/work/0%E8%87%AA%E5%AA%92%E4%BD%93/%E8%87%AA%E5%AA%92%E4%BD%93%E9%A1%B9%E7%9B%AE/1008-%E9%86%8D%E9%86%90%E6%B5%8B%E8%AF%95/%E4%BA%A4%E4%BB%98/%E5%88%86%E9%95%9C%E7%B4%A0%E6%9D%90%E5%B7%A5%E7%A8%8B/%E5%89%AA%E8%BE%91%E7%B4%A0%E6%9D%90/30_33_%E9%80%89%E7%94%A8%E7%89%87%E6%AE%B5.mp4" start="0s" duration="146/30s" hasVideo="1" hasAudio="0" format="fmt34" />
+    <format id="fmt35" width="1414" height="1080" frameDuration="1/30s" colorSpace="1-1-1 (Rec. 709)" />
+    <asset id="asset35" name="30_34_选用片段.mp4" src="file:///Users/sniper/work/0%E8%87%AA%E5%AA%92%E4%BD%93/%E8%87%AA%E5%AA%92%E4%BD%93%E9%A1%B9%E7%9B%AE/1008-%E9%86%8D%E9%86%90%E6%B5%8B%E8%AF%95/%E4%BA%A4%E4%BB%98/%E5%88%86%E9%95%9C%E7%B4%A0%E6%9D%90%E5%B7%A5%E7%A8%8B/%E5%89%AA%E8%BE%91%E7%B4%A0%E6%9D%90/30_34_%E9%80%89%E7%94%A8%E7%89%87%E6%AE%B5.mp4" start="0s" duration="108/30s" hasVideo="1" hasAudio="0" format="fmt35" />
+  </resources>
+  <library>
+    <event name="鹈鹕测试">
+      <project name="鹈鹕测试_分镜双轨">
+        <sequence format="fmt" duration="6494/30s" tcStart="0s" tcFormat="NDF" audioLayout="stereo" audioRate="48k">
+          <spine>
+            <asset-clip name="口播轨道 · 插入前" ref="asset1" offset="0s" start="0s" duration="2160/30s" audioRole="dialogue">
+              <asset-clip name="03 D01_链接素材_1" ref="asset2" lane="1" offset="213/30s" start="0/30s" duration="115/30s" audioRole="effects">
+                <note>分镜表行号 3。</note>
+              </asset-clip>
+              <asset-clip name="04 D01_链接素材_1" ref="asset3" lane="1" offset="328/30s" start="0/30s" duration="104/30s" audioRole="effects">
+                <note>分镜表行号 4。</note>
+              </asset-clip>
+              <asset-clip name="05 D01_链接素材_1" ref="asset4" lane="1" offset="432/30s" start="0/30s" duration="200/30s" audioRole="effects">
+                <note>分镜表行号 5。</note>
+              </asset-clip>
+              <asset-clip name="06 B站_19-24秒" ref="asset5" lane="1" offset="632/30s" start="0/30s" duration="115/30s" audioRole="effects">
+                <note>分镜表行号 6。原视频19–24秒，时间轴使用前3.83秒</note>
+                <adjust-volume amount="-96dB" />
+              </asset-clip>
+              <asset-clip name="07 D01_链接素材_1" ref="asset6" lane="1" offset="747/30s" start="0/30s" duration="183/30s" audioRole="effects">
+                <note>分镜表行号 7。</note>
+              </asset-clip>
+              <asset-clip name="08 最高档两次失败" ref="asset7" lane="1" offset="930/30s" start="0/30s" duration="222/30s" audioRole="effects">
+                <note>分镜表行号 8。</note>
+              </asset-clip>
+              <asset-clip name="09 D01_附件" ref="asset8" lane="1" offset="1152/30s" start="0/30s" duration="90/30s" audioRole="effects">
+                <note>分镜表行号 9。</note>
+              </asset-clip>
+              <asset-clip name="11 SVG名词解释" ref="asset9" lane="1" offset="1444/30s" start="0/30s" duration="76/30s" audioRole="effects">
+                <note>分镜表行号 11。</note>
+              </asset-clip>
+              <asset-clip name="12 西蒙与测试起源" ref="asset10" lane="1" offset="1520/30s" start="0/30s" duration="130/30s" audioRole="effects">
+                <note>分镜表行号 12。</note>
+              </asset-clip>
+              <asset-clip name="12 C01_参考图" ref="asset11" lane="1" offset="1650/30s" start="0/30s" duration="159/30s" audioRole="effects">
+                <note>分镜表行号 12。</note>
+              </asset-clip>
+              <asset-clip name="12 网页原图_01" ref="asset12" lane="1" offset="1809/30s" start="0/30s" duration="72/30s" audioRole="effects">
+                <note>分镜表行号 12。</note>
+              </asset-clip>
+              <asset-clip name="12 网页原图_04" ref="asset13" lane="1" offset="1881/30s" start="0/30s" duration="73/30s" audioRole="effects">
+                <note>分镜表行号 12。</note>
+              </asset-clip>
+              <asset-clip name="13 网页原图_05" ref="asset14" lane="1" offset="1954/30s" start="0/30s" duration="35/30s" audioRole="effects">
+                <note>分镜表行号 13。</note>
+              </asset-clip>
+              <asset-clip name="13 网页原图_09" ref="asset15" lane="1" offset="1989/30s" start="0/30s" duration="36/30s" audioRole="effects">
+                <note>分镜表行号 13。</note>
+              </asset-clip>
+              <asset-clip name="13 网页原图_11" ref="asset16" lane="1" offset="2025/30s" start="0/30s" duration="34/30s" audioRole="effects">
+                <note>分镜表行号 13。</note>
+              </asset-clip>
+              <asset-clip name="14 抽象组合" ref="asset17" lane="1" offset="2059/30s" start="0/30s" duration="101/30s" audioRole="effects">
+                <note>分镜表行号 14。</note>
+              </asset-clip>
+            </asset-clip>
+            <gap name="15 独立素材插入" offset="2160/30s" start="0s" duration="270/30s">
+              <asset-clip name="15 B站_11-20秒" ref="asset18" lane="1" offset="0/30s" start="0/30s" duration="270/30s" audioRole="effects">
+                <note>分镜表行号 15。独立插入9秒，保留素材原声</note>
+              </asset-clip>
+            </gap>
+            <asset-clip name="口播轨道 · 插入后" ref="asset1" offset="2430/30s" start="2160/30s" duration="4064/30s" audioRole="dialogue">
+              <asset-clip name="16 选择鹈鹕的原因" ref="asset19" lane="1" offset="2262/30s" start="0/30s" duration="132/30s" audioRole="effects">
+                <note>分镜表行号 16。</note>
+              </asset-clip>
+              <asset-clip name="17 D01_链接素材_2" ref="asset20" lane="1" offset="2394/30s" start="0/30s" duration="116/30s" audioRole="effects">
+                <note>分镜表行号 17。</note>
+              </asset-clip>
+              <asset-clip name="18 D01_链接素材_1" ref="asset21" lane="1" offset="2613/30s" start="0/30s" duration="207/30s" audioRole="effects">
+                <note>分镜表行号 18。</note>
+              </asset-clip>
+              <asset-clip name="19 发布会原素材" ref="asset22" lane="1" offset="2916/30s" start="0/30s" duration="207/30s" audioRole="effects">
+                <note>分镜表行号 19。</note>
+              </asset-clip>
+              <asset-clip name="20 D01_链接素材_1" ref="asset23" lane="1" offset="3123/30s" start="0/30s" duration="251/30s" audioRole="effects">
+                <note>分镜表行号 20。</note>
+              </asset-clip>
+              <asset-clip name="22 D01_附件" ref="asset24" lane="1" offset="3769/30s" start="0/30s" duration="106/30s" audioRole="effects">
+                <note>分镜表行号 22。</note>
+              </asset-clip>
+              <asset-clip name="23 D01_附件" ref="asset25" lane="1" offset="3875/30s" start="0/30s" duration="205/30s" audioRole="effects">
+                <note>分镜表行号 23。</note>
+              </asset-clip>
+              <asset-clip name="24 D01_链接素材_1" ref="asset26" lane="1" offset="4122/30s" start="0/30s" duration="122/30s" audioRole="effects">
+                <note>分镜表行号 24。</note>
+              </asset-clip>
+              <asset-clip name="25 发明者的提醒" ref="asset27" lane="1" offset="4248/30s" start="0/30s" duration="161/30s" audioRole="effects">
+                <note>分镜表行号 25。</note>
+              </asset-clip>
+              <asset-clip name="26 D01_附件" ref="asset28" lane="1" offset="4518/30s" start="0/30s" duration="158/30s" audioRole="effects">
+                <note>分镜表行号 26。</note>
+              </asset-clip>
+              <asset-clip name="27 网页原图_02" ref="asset29" lane="1" offset="4758/30s" start="0/30s" duration="159/30s" audioRole="effects">
+                <note>分镜表行号 27。</note>
+              </asset-clip>
+              <asset-clip name="28 B站_0-20秒" ref="asset30" lane="1" offset="5049/30s" start="0/30s" duration="248/30s" audioRole="effects">
+                <note>分镜表行号 28。</note>
+              </asset-clip>
+              <asset-clip name="29 网页原图_07" ref="asset31" lane="1" offset="5442/30s" start="0/30s" duration="88/30s" audioRole="effects">
+                <note>分镜表行号 29。</note>
+              </asset-clip>
+              <asset-clip name="29 D01_链接素材_1" ref="asset32" lane="1" offset="5530/30s" start="0/30s" duration="70/30s" audioRole="effects">
+                <note>分镜表行号 29。</note>
+              </asset-clip>
+              <asset-clip name="29 D01_链接素材_1" ref="asset33" lane="1" offset="5600/30s" start="0/30s" duration="84/30s" audioRole="effects">
+                <note>分镜表行号 29。</note>
+              </asset-clip>
+              <asset-clip name="30 D01_链接素材_1" ref="asset34" lane="1" offset="5822/30s" start="0/30s" duration="146/30s" audioRole="effects">
+                <note>分镜表行号 30。</note>
+              </asset-clip>
+              <asset-clip name="30 E01_链接素材_1" ref="asset35" lane="1" offset="5968/30s" start="0/30s" duration="108/30s" audioRole="effects">
+                <note>分镜表行号 30。</note>
+              </asset-clip>
+            </asset-clip>
+          </spine>
+        </sequence>
+      </project>
+    </event>
+  </library>
+</fcpxml>

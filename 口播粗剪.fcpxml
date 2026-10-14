@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE fcpxml>
+<fcpxml version="1.8">
+  <resources>
+    <format id="r1" name="FFVideoFormat3840x2160p30" frameDuration="1/30s" width="3840" height="2160" colorSpace="1-1-1 (Rec. 709)" />
+    <asset id="r2" name="口播2.mp4" src="file:///Users/sniper/work/0%E8%87%AA%E5%AA%92%E4%BD%93/%E8%87%AA%E5%AA%92%E4%BD%93%E9%A1%B9%E7%9B%AE/1008-%E9%86%8D%E9%86%90%E6%B5%8B%E8%AF%95/%E5%8F%A3%E6%92%AD2.mp4" start="0s" duration="8468/30s" hasVideo="1" hasAudio="1" format="r1" audioSources="1" audioChannels="2" audioRate="44100" />
+  </resources>
+  <library>
+    <event name="鹈鹕测试口播">
+      <project name="口播粗剪">
+        <sequence format="r1" duration="6224/30s" tcStart="0s" tcFormat="NDF" audioLayout="stereo" audioRate="44.1k">
+          <spine>
+            <asset-clip name="01 完整开场" ref="r2" offset="0/30s" start="0/30s" duration="328/30s" audioRole="dialogue" />
+            <asset-clip name="02 压缩动画介绍后的长停顿" ref="r2" offset="328/30s" start="405/30s" duration="104/30s" audioRole="dialogue" />
+            <asset-clip name="03 压缩例子之间的长停顿" ref="r2" offset="432/30s" start="593/30s" duration="315/30s" audioRole="dialogue" />
+            <asset-clip name="04 压缩跃上跃下后的长停顿" ref="r2" offset="747/30s" start="1002/30s" duration="183/30s" audioRole="dialogue" />
+            <asset-clip name="05 删除Opus/max首遍重录，保留后面完整一遍" ref="r2" offset="930/30s" start="1406/30s" duration="222/30s" audioRole="dialogue" />
+            <asset-clip name="06 删除这个拥有大嘴袋的未完成起头" ref="r2" offset="1152/30s" start="1741/30s" duration="131/30s" audioRole="dialogue" />
+            <asset-clip name="07 压缩自我介绍前的长停顿" ref="r2" offset="1283/30s" start="1979/30s" duration="368/30s" audioRole="dialogue" />
+            <asset-clip name="08 删除首次测试了包括的重复起头" ref="r2" offset="1651/30s" start="2406/30s" duration="408/30s" audioRole="dialogue" />
+            <asset-clip name="09 压缩烂得各有特色后的停顿" ref="r2" offset="2059/30s" start="2849/30s" duration="213/30s" audioRole="dialogue" />
+            <asset-clip name="10 压缩测试原因后的长停顿" ref="r2" offset="2272/30s" start="3199/30s" duration="238/30s" audioRole="dialogue" />
+            <asset-clip name="11 压缩来解决后的长停顿" ref="r2" offset="2510/30s" start="3554/30s" duration="310/30s" audioRole="dialogue" />
+            <asset-clip name="12 删除而这也戳破了的口误起头，保留后面完整句" ref="r2" offset="2820/30s" start="3948/30s" duration="949/30s" audioRole="dialogue" />
+            <asset-clip name="13 删除如果你突然觉得模型变笨了的首遍，保留后面连贯一遍" ref="r2" offset="3769/30s" start="5046/30s" duration="106/30s" audioRole="dialogue" />
+            <asset-clip name="14 按用户要求保留后一遍完整测试结果说明及那恭喜你，删除前两遍" ref="r2" offset="3875/30s" start="5700/30s" duration="534/30s" audioRole="dialogue" />
+            <asset-clip name="15 删除首先你要知道的重复起头" ref="r2" offset="4409/30s" start="6318/30s" duration="408/30s" audioRole="dialogue" />
+            <asset-clip name="16 删除而此的短起头，保留而除此之外" ref="r2" offset="4817/30s" start="6756/30s" duration="867/30s" audioRole="dialogue" />
+            <asset-clip name="17 压缩3D测试后的长停顿" ref="r2" offset="5684/30s" start="7761/30s" duration="392/30s" audioRole="dialogue" />
+            <asset-clip name="18 删除你现在在用什么模型的首遍，保留连贯结尾" ref="r2" offset="6076/30s" start="8215/30s" duration="148/30s" audioRole="dialogue" />
+          </spine>
+        </sequence>
+      </project>
+    </event>
+  </library>
+</fcpxml>
