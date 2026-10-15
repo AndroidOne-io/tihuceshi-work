@@ -149,6 +149,7 @@ S(m0, m1, meme, 'meme', out=True); X(m0, 'whoosh')
 exec(open('/tmp/claude-0/mock/seg3.py').read())
 exec(open('/tmp/claude-0/mock/seg4.py').read())
 exec(open('/tmp/claude-0/mock/seg5.py').read())
+exec(open('/tmp/claude-0/mock/seg6.py').read())
 # ======================= subtitles
 SUBS = json.load(open('/tmp/claude-0/build/subs_src.json'))
 def wlen(s): return sum(0.55 if ord(c) < 128 else 1.0 for c in s)

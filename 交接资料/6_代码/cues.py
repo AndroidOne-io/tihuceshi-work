@@ -31,7 +31,11 @@ music = [
     dict(file='轻松滑稽-滑稽探戈.mp3', src=4.0, ref_ss=6.0, at=T(131.6), until=T(141.95), fade_in=0.05, fade_out=0.2, level=-22),
     # --- seg 5
     dict(file='Sneaky Snitch - Kevin MacLeod.mp3', src=30.0, ref_ss=31.0, at=T(141.95) - 0.05, until=T(156.15) - 0.1, fade_in=0.1, fade_out=0.15, level=-22),
-    dict(file='In Motion - Trent Reznor & Atticus Ross.m4a', src=8.0, ref_ss=10.0, at=T(156.15), until=T(175.0), fade_in=0.05, fade_out=0.3, level=-21),
+    dict(file='In Motion - Trent Reznor & Atticus Ross.m4a', src=8.0, ref_ss=10.0, at=T(156.15), until=T(164.15) + 0.2, fade_in=0.05, fade_out=0.3, level=-21),
+    # --- seg 6
+    dict(file='The Pink Panther Theme - Henry Mancini.mp3', src=4.0, ref_ss=5.0, at=T(164.3), until=T(176.93) - 0.3, fade_in=0.1, fade_out=0.15, level=-20),
+    dict(file='大气史诗-破晓曙光.mp3', src=1.0, ref_ss=2.0, at=T(176.93), until=T(189.5), fade_in=0.02, fade_out=0.3, level=-22),
+    dict(file='轻松滑稽-Sunny Jim.mp3', src=0.5, ref_ss=2.0, at=T(189.5) - 0.1, until=ev['total'], fade_in=0.2, fade_out=1.0, level=-22),
 ]
 sfx = [dict(file='重音-咚 重磅.mp3', at=1.05, gain_db=-16, align='peak'), dict(file=WH, at=3.9, gain_db=-24, align='peak')]
 sfx += [dict(file=WH, at=t, gain_db=-26, align='peak') for t in (7.5, 11.0, 14.45, 21.12, 24.95, 38.5)]
@@ -49,8 +53,9 @@ for e in ev['sfx']:
     elif k == 'thud': sfx.append(dict(file='重音-Thud Hit C.mp3', at=t, gain_db=-17, align='peak'))
     elif k == 'boom': sfx.append(dict(file='重音-咚 重磅.mp3', at=t, gain_db=-16, align='peak'))
     else: synth.append(dict(kind=k, at=t))
-swell = [[1.05, 3.9, 1.0], [42.75, 44.6, 1.0], [T(83.72), T(83.72) + 1.0, 1.0], [T(100.14), T(102.1), 0.75], [T(121.1), T(121.1) + 1.0, 1.0]]
+swell = [[1.05, 3.9, 1.0], [42.75, 44.6, 1.0], [T(83.72), T(83.72) + 1.0, 1.0], [T(100.14), T(102.1), 0.75], [T(121.1), T(121.1) + 1.0, 1.0], [T(176.93), T(176.93) + 1.0, 1.0], [T(207.4667), ev['total'], 1.0]]
 b0 = T(83.72); sfx += [dict(file='上升-whoosh rise.mp3', at=b0, gain_db=-22, align='end'), dict(file='重音-Thud Hit C.mp3', at=b0, gain_db=-15, align='peak'), dict(file='重音-咚 重磅.mp3', at=b0, gain_db=-17, align='peak')]
+b2 = T(176.93); sfx += [dict(file='上升-whoosh rise.mp3', at=b2, gain_db=-22, align='end'), dict(file='重音-Thud Hit C.mp3', at=b2, gain_db=-15, align='peak'), dict(file='重音-咚 重磅.mp3', at=b2, gain_db=-17, align='peak')]
 b1 = T(121.1); sfx += [dict(file='上升-whoosh rise.mp3', at=b1, gain_db=-22, align='end'), dict(file='重音-Thud Hit C.mp3', at=b1, gain_db=-15, align='peak'), dict(file='重音-咚 重磅.mp3', at=b1, gain_db=-17, align='peak')]
 json.dump(dict(end=END, duck_db=-11, voice=voice, music=[m for m in music if m['at'] < END], sfx=[s for s in sfx if s['at'] < END],
                synth=[s for s in synth if s['at'] < END], swell=swell), open('/tmp/claude-0/mock/cues_all.json', 'w'), ensure_ascii=False, indent=1)
