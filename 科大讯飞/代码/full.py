@@ -8,7 +8,7 @@ sys.argv = ['timeline.py', sys.argv[1], sys.argv[2]]
 OUT = sys.argv[2]
 HERE = os.path.dirname(os.path.abspath(__file__))
 # 口播停顿（只停在全屏画面上）：开场问题、最重的事实、向内/向外对比、论点大字、包袱、片名、转国内
-PAUSE_OVR = {1: 1.6, 8: 1.2, 11: 1.0, 13: 1.8, 15: 0.8, 17: 2.5, 18: 1.0, 25: 1.0, 36: 1.8, 47: 1.0, 50: 1.2, 60: 0.8}
+PAUSE_OVR = {1: 1.6, 8: 1.2, 11: 1.0, 13: 1.8, 15: 0.8, 17: 2.5, 18: 1.0, 25: 1.0, 36: 1.8, 47: 1.0, 50: 1.2, 60: 0.8, 70: 1.0}
 exec(open(os.path.join(HERE, 'timeline.py'), encoding='utf-8').read().split("if __name__ == '__main__':")[0])
 from v4 import *
 from v3 import badge_table
