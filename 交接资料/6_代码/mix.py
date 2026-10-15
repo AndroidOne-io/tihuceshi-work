@@ -15,6 +15,7 @@ voice = np.zeros((N, 2), np.float32)
 for seg in C['voice']:  # {src, ss, dur, at, lufs}
     if seg['at'] >= END: continue
     x = load(seg['src'], seg['ss'], min(seg['dur'], END - seg['at'] + 0.1)); x *= 10 ** ((seg.get('lufs', -16) - lufs(x)) / 20)
+    fz = min(240, len(x) // 2); x[:fz] *= np.linspace(0, 1, fz)[:, None]; x[-fz:] *= np.linspace(1, 0, fz)[:, None]
     i = int(seg['at'] * SR)
     if i >= N: continue
     x = x[:N - i]; voice[i:i + len(x)] += x

@@ -137,7 +137,7 @@ def sD(t, t0, t1):
 S(83.88, 94.2, sD, 'info'); X(T(83.88), 'whoosh'); X(T(87.3), 'pop'); X(T(88.1), 'pop'); X(T(90.74), 'whoosh'); X(T(91.6), 'pop'); X(T(92.78), 'pop')
 
 # --- F: the false bubble — model tokens floating inside, pelican beak pops it
-BUB_TOK = [B(o.token(170, c, n_, anchors=False, title_size=40)) for n_, c in [('GPT', 'cyan'), ('Claude', 'orange'), ('Gemini', 'blue'), ('DeepSeek', 'blue'), ('Qwen', 'violet'), ('Grok', 'grey')]]
+BUB_TOK = [B(o.token(170, c, n_, anchors=False, title_size=40)) for n_, c in [('GPT', 'cyan'), ('Claude', 'orange'), ('Gemini', 'blue'), ('Llama', 'violet'), ('Mistral', 'red'), ('Grok', 'grey')]]
 PEL_FLY = B(st.sticker(Image.fromarray(cv2.cvtColor(M2.CUT_PEL, cv2.COLOR_BGRA2RGBA)), 320, 12, -18))
 def bubble(R):
     D = 2 * R + 8; yy, xx = np.mgrid[0:D, 0:D].astype(np.float32); d = np.sqrt((xx - D / 2) ** 2 + (yy - D / 2) ** 2) / R
@@ -227,7 +227,7 @@ def sG(t, t0, t1):
     return f
 S(97.5, 102.1, sG, 'info'); X(T(97.5), 'whoosh'); X(T(100.14), 'whoosh'); X(T(100.45), 'thud')
 for i in range(4): X(T(100.92) + i * 0.18, 'hit' if i == 3 else 'pop')
-S(102.1, 104.3, host_sc(1.08, 0.0), 'host')
+S(102.1, 103.45, host_sc(1.08, 0.0), 'host')
 
 # --- H: six pelicans slam down, the bad one is obvious at a glance
 v20 = Vid(CR + '20_22_选用片段.mp4')
@@ -236,9 +236,9 @@ POS20 = [(400 + (k % 3) * 560, 330 + (k // 3) * 400) for k in range(6)]
 def sH(t, t0, t1):
     tl = t - t0; n = N(t); f = BG.copy(); fr = v20.get(max(0, n - 105.0))
     for k, ((x0, y0, x1, y1), (cx, cy)) in enumerate(zip(C20, POS20)):
-        d0 = 105.32 + k * 0.07
+        d0 = 104.25 + k * 0.1 + (0.0 if k < 3 else 0.5)
         if n < d0: continue
-        u = ease((n - d0) / 0.22); s = 1.5 - 0.5 * u
+        u = ease((n - d0) / 0.25); s = 1.5 - 0.5 * u
         card = B(st.photo_card(fr[y0:y1, x0:x1], 500, border=6))
         bad = k == 1
         dx = int(10 * np.sin((n - 107.0) * 60) * max(0, 1 - (n - 107.0) / 0.5)) if bad and n > 107.0 else 0
@@ -246,11 +246,9 @@ def sH(t, t0, t1):
         put(f, cv2.resize(card, None, fx=s, fy=s), cx + dx, cy, min(1, u * 2) * act)
     if n > 107.54: pen_x(f, POS20[1][0], POS20[1][1], 120, (n - 107.54) / 0.3, 16)
     if n > 107.9: pen_circle(f, POS20[2][0], POS20[2][1], 290, 200, (n - 107.9) / 0.4, 10)
-    if n < 105.3:
-        put(f, cv2.resize(host_full(n, 1.0), (W, H)), W // 2, H // 2)
-    o.pip(f, hf_small(t), x=W - 260, y=H - 260, d=200) if n > 105.3 else None
+    o.pip(f, hf_small(t), x=W - 260, y=H - 260, d=200)
     return f
-S(104.3, 108.9, sH, 'info'); X(T(105.32), 'whoosh'); X(T(105.6), 'thud'); X(T(107.0), 'pop'); X(T(107.54), 'scribble'); X(T(107.9), 'scribble')
+S(103.45, 108.9, sH, 'info'); X(T(104.25), 'whoosh'); X(T(104.75), 'whoosh'); X(T(105.68), 'thud'); X(T(107.0), 'pop'); X(T(107.54), 'scribble'); X(T(107.9), 'scribble')
 
 # --- I: host, new model gift -> pelican test sticker
 GIFT = B(st.sticker(st.emoji('🎁', 260), 260, 14, -8))

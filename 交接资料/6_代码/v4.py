@@ -9,7 +9,7 @@ from sample import ease, back_out, B, put, xform, Vid, host, host_full, pen_circ
 W, H, FPS = 1920, 1080, 30
 R = o.R; P = o.P; CR = P + '/剪辑素材/'; SR = P + '/素材/'
 NARR_DUR = 207.4667
-INSERTS = [(42.8, 1.8, 'title'), (72.25, 5.4, 'meme'), (83.72, 1.0, 'brush'), (121.1, 1.0, 'brush'), (176.93, 1.0, 'brush')]
+INSERTS = [(42.8, 1.8, 'title'), (72.25, 5.4, 'meme'), (83.72, 1.0, 'brush'), (103.45, -0.8, 'cut'), (121.1, 1.0, 'brush'), (124.34, -0.41, 'cut'), (176.93, 1.0, 'brush')]
 def T(n): return n + sum(d for a, d, _ in INSERTS if a < n - 1e-9)
 def PT(a):
     t0 = T(a) if a > INSERTS[0][0] else a
@@ -81,7 +81,7 @@ TOK_SIMON = B(M2.tok_simon(250))
 SEATS = [B(o.token(176, 'grey', portrait=crude[(k % 11) + 1], anchors=False)) for k in range(16)]
 # 16 model medallions shown first (names inside medallion only), flipped to their drawings later
 MODELS = [('Sonnet', 'orange'), ('o1', 'cyan'), ('4o mini', 'cyan'), ('Gemini', 'blue'), ('GPT-4o', 'cyan'), ('Flash', 'blue'), ('Opus 3', 'orange'), ('Llama', 'violet'),
-          ('Mistral', 'red'), ('Haiku 3', 'orange'), ('o1 mini', 'cyan'), ('Flash 8B', 'blue'), ('Llama 3', 'violet'), ('Pixtral', 'red'), ('Grok 2', 'grey'), ('Qwen', 'violet')]
+          ('Mistral', 'red'), ('Haiku 3', 'orange'), ('o1 mini', 'cyan'), ('Flash 8B', 'blue'), ('Llama 3', 'violet'), ('Pixtral', 'red'), ('Grok 2', 'grey'), ('Phi 3', 'green')]
 MTOK = [B(o.token(176, c, n, anchors=False, title_size=44 if len(n) <= 7 else 36)) for n, c in MODELS]
 MTOK_HI = {3: B(o.token(300, 'blue', 'Gemini 1.5', anchors=True, title_size=58)), 4: B(o.token(300, 'cyan', 'GPT-4o', anchors=True, title_size=64))}
 HI = [(3, 56.30, 57.20), (4, 57.20, 58.55)]  # Gemini 1.5 / GPT-4o spoken
@@ -147,6 +147,8 @@ def meme(t, t0, t1):
 S(m0, m1, meme, 'meme', out=True); X(m0, 'whoosh')
 
 exec(open('/tmp/claude-0/mock/seg3.py').read())
+exec(open('/tmp/claude-0/mock/seg4.py').read())
+exec(open('/tmp/claude-0/mock/seg5.py').read())
 # ======================= subtitles
 SUBS = json.load(open('/tmp/claude-0/build/subs_src.json'))
 def wlen(s): return sum(0.55 if ord(c) < 128 else 1.0 for c in s)

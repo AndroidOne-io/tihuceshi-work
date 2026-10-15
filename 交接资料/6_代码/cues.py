@@ -9,7 +9,7 @@ V = '/home/claude/aliang2052/tihuceshi/口播粗剪.mp4'; MEME = '/home/claude/a
 END = float(sys.argv[1]) if len(sys.argv) > 1 else ev['total']
 voice = []; cur = 0.0
 for a, d, k in INS + [[207.4667, 0, 'end']]:
-    voice.append(dict(src=V, ss=cur, dur=a - cur, at=cur + sum(d for x, d, _ in INS if x <= cur + 1e-9))); cur = a
+    voice.append(dict(src=V, ss=cur, dur=a - cur, at=cur + sum(d for x, d, _ in INS if x <= cur + 1e-9))); cur = a - min(d, 0)
 m0, m1 = PT(72.25); voice.append(dict(src=MEME, ss=0, dur=m1 - m0 - 0.05, at=m0, lufs=-17))
 WH = '转场-Whoosh.mp3'
 music = [
@@ -25,7 +25,13 @@ music = [
     dict(file='轻松滑稽-Monkeybiz.mp3', src=1.0, ref_ss=4.0, at=79.45, until=T(83.72) - 0.35, fade_in=0.2, fade_out=0.12, level=-22),
     dict(file='Mombasa - Hans Zimmer.m4a', src=13.0, ref_ss=14.0, at=T(83.72), until=T(96.96) - 0.1, fade_in=0.01, fade_out=0.08, level=-19),
     dict(file='Heart of Courage - Two Steps From Hell.mp3', src=72.0, ref_ss=72.0, at=T(96.96) + 0.1, until=T(102.1), fade_in=0.3, fade_out=0.05, level=-18),
-    dict(file='Monkeys Spinning Monkeys - Kevin MacLeod.m4a', src=1.0, ref_ss=4.0, at=T(104.3), until=T(140.0), fade_in=0.3, fade_out=0.3, level=-22),
+    dict(file='Monkeys Spinning Monkeys - Kevin MacLeod.m4a', src=1.0, ref_ss=4.0, at=T(104.25) - 0.05, until=T(121.1) - 0.3, fade_in=0.3, fade_out=0.15, level=-22),
+    # --- seg 4
+    dict(file='悬疑-Dance for me walls.mp3', src=20.0, ref_ss=21.0, at=T(121.1), until=T(131.6), fade_in=0.02, fade_out=0.08, level=-21),
+    dict(file='轻松滑稽-滑稽探戈.mp3', src=4.0, ref_ss=6.0, at=T(131.6), until=T(141.95), fade_in=0.05, fade_out=0.2, level=-22),
+    # --- seg 5
+    dict(file='Sneaky Snitch - Kevin MacLeod.mp3', src=30.0, ref_ss=31.0, at=T(141.95) - 0.05, until=T(156.15) - 0.1, fade_in=0.1, fade_out=0.15, level=-22),
+    dict(file='In Motion - Trent Reznor & Atticus Ross.m4a', src=8.0, ref_ss=10.0, at=T(156.15), until=T(175.0), fade_in=0.05, fade_out=0.3, level=-21),
 ]
 sfx = [dict(file='重音-咚 重磅.mp3', at=1.05, gain_db=-16, align='peak'), dict(file=WH, at=3.9, gain_db=-24, align='peak')]
 sfx += [dict(file=WH, at=t, gain_db=-26, align='peak') for t in (7.5, 11.0, 14.45, 21.12, 24.95, 38.5)]
@@ -43,8 +49,9 @@ for e in ev['sfx']:
     elif k == 'thud': sfx.append(dict(file='重音-Thud Hit C.mp3', at=t, gain_db=-17, align='peak'))
     elif k == 'boom': sfx.append(dict(file='重音-咚 重磅.mp3', at=t, gain_db=-16, align='peak'))
     else: synth.append(dict(kind=k, at=t))
-swell = [[1.05, 3.9, 1.0], [42.75, 44.6, 1.0], [T(83.72), T(83.72) + 1.0, 1.0], [T(100.14), T(102.1), 0.75]]
+swell = [[1.05, 3.9, 1.0], [42.75, 44.6, 1.0], [T(83.72), T(83.72) + 1.0, 1.0], [T(100.14), T(102.1), 0.75], [T(121.1), T(121.1) + 1.0, 1.0]]
 b0 = T(83.72); sfx += [dict(file='上升-whoosh rise.mp3', at=b0, gain_db=-22, align='end'), dict(file='重音-Thud Hit C.mp3', at=b0, gain_db=-15, align='peak'), dict(file='重音-咚 重磅.mp3', at=b0, gain_db=-17, align='peak')]
+b1 = T(121.1); sfx += [dict(file='上升-whoosh rise.mp3', at=b1, gain_db=-22, align='end'), dict(file='重音-Thud Hit C.mp3', at=b1, gain_db=-15, align='peak'), dict(file='重音-咚 重磅.mp3', at=b1, gain_db=-17, align='peak')]
 json.dump(dict(end=END, duck_db=-11, voice=voice, music=[m for m in music if m['at'] < END], sfx=[s for s in sfx if s['at'] < END],
                synth=[s for s in synth if s['at'] < END], swell=swell), open('/tmp/claude-0/mock/cues_all.json', 'w'), ensure_ascii=False, indent=1)
 print('ok', END)
