@@ -79,6 +79,13 @@ S(51.0, 55.1, simon_scene, 'portrait'); X(T(51.0), 'whoosh'); X(T(51.0) + 0.9, '
 import mockups2 as M2
 TOK_SIMON = B(M2.tok_simon(250))
 SEATS = [B(o.token(176, 'grey', portrait=crude[(k % 11) + 1], anchors=False)) for k in range(16)]
+# 16 model medallions shown first (names inside medallion only), flipped to their drawings later
+MODELS = [('Sonnet', 'orange'), ('o1', 'cyan'), ('4o mini', 'cyan'), ('Gemini', 'blue'), ('GPT-4o', 'cyan'), ('Flash', 'blue'), ('Opus 3', 'orange'), ('Llama', 'violet'),
+          ('Mistral', 'red'), ('Haiku 3', 'orange'), ('o1 mini', 'cyan'), ('Flash 8B', 'blue'), ('Llama 3', 'violet'), ('Pixtral', 'red'), ('Grok 2', 'grey'), ('Qwen', 'violet')]
+MTOK = [B(o.token(176, c, n, anchors=False, title_size=44 if len(n) <= 7 else 36)) for n, c in MODELS]
+MTOK_HI = {3: B(o.token(300, 'blue', 'Gemini 1.5', anchors=True, title_size=58)), 4: B(o.token(300, 'cyan', 'GPT-4o', anchors=True, title_size=64))}
+HI = [(3, 56.30, 57.20), (4, 57.20, 58.55)]  # Gemini 1.5 / GPT-4o spoken
+FLIP0 = 63.3
 SEAT_POS = [(300 + (k % 8) * 190, 620 + (k // 8) * 230) for k in range(16)]
 def stage(t, t0, t1):
     tl = t - t0; f = BG.copy(); n = N(t)
@@ -89,9 +96,26 @@ def stage(t, t0, t1):
     for k, (cx, cy) in enumerate(SEAT_POS):
         d0 = 0.7 + k * 0.08
         if tl < d0: continue
-        s = 0.5 + 0.5 * back_out((tl - d0) / 0.3); put(f, cv2.resize(SEATS[k], None, fx=s, fy=s), cx, cy)
+        s = 0.5 + 0.5 * back_out((tl - d0) / 0.3)
+        nn = n if n is not None else 0
+        fp = (nn - FLIP0 - k * 0.05) / 0.28  # flip progress 0..1
+        if fp < 0.5:
+            img = MTOK[k]; act = 1.0
+            hk = [h for h in HI if h[1] <= nn < h[2]]
+            if hk and hk[0][0] != k: act = 0.35
+            if any(h[0] == k and h[1] - 0.05 <= nn < h[2] + 0.2 for h in HI): act = 0.0
+            sx = s * max(0.02, np.cos(np.pi * max(0, fp)))
+        else:
+            img = SEATS[k]; act = 1.0; sx = s * max(0.02, -np.cos(np.pi * min(1, fp)))
+        im2 = cv2.resize(img, (max(2, int(img.shape[1] * sx)), int(img.shape[0] * s)))
+        if act > 0: put(f, im2, cx, cy, act)
         if n is not None and n > 66.0:
             pen_x(f, cx + 50, cy - 50, 26, (n - 66.0 - k * 0.09) / 0.2, 8)
+    # spoken model pops up big above its seat
+    for k, a0, a1 in HI:
+        if n is not None and a0 - 0.05 <= n < a1 + 0.25:
+            u = back_out((n - a0) / 0.3) if n < a1 else 1 - ease((n - a1) / 0.25)
+            cx, cy = SEAT_POS[k]; put(f, cv2.resize(MTOK_HI[k], None, fx=0.6 + 0.4 * u, fy=0.6 + 0.4 * u), cx, int(cy - 40 * u), min(1, u * 3))
     # camera: slow push, then at 60.7 push toward seats
     zt = 1.0 + 0.03 * min(tl, 6) / 6
     if n is not None and n > 60.7: zt += 0.08 * ease((n - 60.7) / 0.8)
@@ -100,6 +124,8 @@ def stage(t, t0, t1):
     o.pip(f, hf_small(t), x=1660, y=830, d=200); return f
 S(55.1, 68.7, stage, 'info'); X(T(55.1), 'whoosh')
 for k in range(0, 16, 3): X(T(55.1) + 0.7 + k * 0.08, 'pop')
+X(T(56.30), 'pop'); X(T(57.20), 'pop'); X(T(58.64), 'shine')
+for k in range(0, 16, 4): X(T(FLIP0) + k * 0.05, 'whoosh')
 X(T(66.0), 'scribble'); X(T(66.6), 'scribble'); X(T(67.2), 'scribble')
 # host + stickers (pelican, bike, chicken, basketball)
 PELSTK = B(st.sticker(Image.fromarray(cv2.cvtColor(M2.CUT_PEL, cv2.COLOR_BGRA2RGBA)), 300, 14, -8))

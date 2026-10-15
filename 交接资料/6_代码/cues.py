@@ -17,9 +17,9 @@ music = [
     dict(file='In Motion - Trent Reznor & Atticus Ross.m4a', src=0.0, at=1.05, until=7.6, fade_in=0.02, fade_out=0.25, level=-19),
     dict(file='Sneaky Snitch - Kevin MacLeod.mp3', src=0.0, at=7.45, until=31.2, fade_in=0.05, fade_out=0.3, level=-20),
     dict(file='In Motion - Trent Reznor & Atticus Ross.m4a', src=8.0, at=31.0, until=38.7, fade_in=0.1, fade_out=0.3, level=-20),
-    dict(file='Mind Heist - Zack Hemsey.m4a', src=52.0 - (42.8 - 38.5), ref_ss=52.0, at=38.5, until=48.5, fade_in=0.4, fade_out=3.0, level=-17),
+    dict(file='Mind Heist - Zack Hemsey.m4a', src=52.0 - (42.8 - 38.5), ref_ss=52.0, at=38.5, until=45.1, fade_in=0.4, fade_out=0.6, level=-17),
     # --- seg 2
-    dict(file='Can You Hear The Music - Ludwig Göransson.mp3', src=0.0, ref_ss=20.0, at=T(48.45) - 0.2, until=T(66.0), fade_in=0.6, fade_out=0.25, level=-21),
+    dict(file='Monkeys Spinning Monkeys - Kevin MacLeod.m4a', src=1.0, ref_ss=4.0, at=44.75, until=T(66.0), fade_in=0.3, fade_out=0.25, level=-22),
     dict(file='Fluffing a Duck - Kevin MacLeod.mp3', src=0.0, at=T(66.0) - 0.05, until=m0 + 0.1, fade_in=0.05, fade_out=0.3, level=-20),
 ]
 sfx = [dict(file='重音-咚 重磅.mp3', at=1.05, gain_db=-16, align='peak'), dict(file=WH, at=3.9, gain_db=-24, align='peak')]
