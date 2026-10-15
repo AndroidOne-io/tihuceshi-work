@@ -8,7 +8,7 @@ sys.argv = ['timeline.py', sys.argv[1], sys.argv[2]]
 OUT = sys.argv[2]
 HERE = os.path.dirname(os.path.abspath(__file__))
 # 口播停顿（只停在全屏画面上）：开场问题、最重的事实、向内/向外对比、论点大字、包袱、片名、转国内
-PAUSE_OVR = {1: 1.6, 8: 1.2, 11: 1.0, 13: 1.8, 15: 0.8, 17: 2.5, 18: 1.0}
+PAUSE_OVR = {1: 1.6, 8: 1.2, 11: 1.0, 13: 1.8, 15: 0.8, 17: 2.5, 18: 1.0, 25: 1.0, 36: 1.8}
 exec(open(os.path.join(HERE, 'timeline.py'), encoding='utf-8').read().split("if __name__ == '__main__':")[0])
 from v4 import *
 from v3 import badge_table
@@ -34,6 +34,8 @@ EV = dict(
     outward=wt(11, '向外延伸'), rule=wt(11, '新的规律'),
     use=wt(13, '使用知识'), create=wt(13, '参与创造知识'),
     meme=S[15]['start'], afs=wt(17, 'AI for Science'), bridge=last_voice(18), cut19=S[19]['start'],
+    cut22=S[22]['start'], ch_in=last_voice(25), cut26=S[26]['start'], cut28=S[28]['start'], cut30=S[30]['start'], cut32=S[32]['start'], cut33=S[33]['start'],
+    cut35=S[35]['start'], cut36=S[36]['start'], fall=wt(36, '中试') + 0.15, valley=wt(36, '死亡之谷'), cut37=S[37]['start'],
 )
 EV['rh'] = EV['dive'] + 0.8; EV['hg'] = EV['dive'] + 1.3
 BADGE_T = []
@@ -264,6 +266,7 @@ VIS = {1: v1, 2: F2, 3: lambda t: F3a(t) if t < EV['split3'] else whip(F3b(t), m
        9: host(1.0, [(NEQ_A, EV['neqA'] - 0.05, 1540, 330), (NEQ, EV['neq'] - 0.05, 1540, 488), (NEQ_B, EV['neqB'] - 0.05, 1540, 640)]),
        10: v1011, 11: v1011, 12: host(1.08), 13: v13, 14: host(1.0), 15: v15, 16: host(1.08), 17: v17, 18: v18}
 CUTS = ['cut2', 'cut4', 'cut5', 'cut7', 'cut9', 'cut10', 'cut19']
+exec(open(os.path.join(HERE, 'seg3_vis.py'), encoding='utf-8').read())
 _old = None
 def vis_of(i):
     global _old
@@ -303,11 +306,14 @@ def peak_of(x): env = np.convolve(np.abs(x).mean(1), np.ones(441) / 441, 'same')
 def db(x): return 20 * np.log10(np.sqrt((x ** 2).mean()) + 1e-9)
 
 # 配乐段落：(曲子, 曲内对齐点, 时间线对齐点, 从, 到)
-MUSIC = [dict(file='音乐/悬疑-Dance for me walls.mp3', src=21.09, at=EV['boom'], frm=EV['boom'] - 2.5, to=EV['cut19'] + 0.6, fin=0.4, fout=1.2, dip=EV['boom'])]
+MUSIC = [dict(file='音乐/悬疑-Dance for me walls.mp3', src=21.09, at=EV['boom'], frm=EV['boom'] - 2.5, to=EV['bridge'] + 0.9, fin=0.4, fout=1.1, dip=EV['boom']),
+         dict(file='音乐/Time - Hans Zimmer.mp3', src=30.0, at=EV['bridge'], frm=EV['bridge'] - 0.3, to=EV['fall'] - 0.02, fin=1.0, fout=0.12, dip=None)]   # 死亡之谷：曲线栽下去那一刻配乐断掉
 SFX = {'rise': '上升-whoosh rise.mp3', 'whoosh': '转场-Whoosh.mp3', 'swish': '转场-Windy swish.mp3', 'gate': '重音-Gate Hit.mp3', 'thud': '重音-Thud Hit C.mp3', 'dong': '重音-咚 重磅.mp3'}
 def sfx_plan():
     P = [('蓄力→人声进', EV['voice_in'], 'rise', 0.55), ('冲进隧道', EV['voice_in'], 'thud', 0.40), ('攻克·问号炸开', EV['boom'], 'dong', 1.0)]
-    for c in CUTS: P.append((f'转场 {c}', EV[c], 'whoosh', 0.45))
+    QUIET = {'cut22', 'cut26', 'cut30', 'cut32', 'cut33', 'cut35'}   # 同一段落里素材换素材：只切画面，不加转场声（避免音效泛滥）
+    for c in CUTS:
+        if c not in QUIET: P.append((f'转场 {c}', EV[c], 'whoosh', 0.45))
     P += [('截图换页', EV['split3'], 'swish', 0.35), ('719 停住', EV['land719'], 'gate', 0.50)]
     for j, t0 in enumerate(BADGE_T): P.append((f'徽章{j + 1}', t0 + 0.1, 'thud', 0.20 if j < 3 else 0.12))
     P += [('未公开卡', EV['lock'] + 0.08, 'thud', 0.22), ('变金', EV['gold'] + 0.1, 'gate', 0.38), ('冲进论文', EV['dive'] + 0.3, 'swish', 0.45),
@@ -317,16 +323,20 @@ def sfx_plan():
           ('金光蓄力', EV['outward'] + 0.3, 'rise', 0.35), ('冲破边界', EV['outward'] + 0.3, 'gate', 0.45), ('新规律连线', EV['rule'], 'swish', 0.25),
           ('使用知识', EV['use'], 'thud', 0.18), ('创造·蓄力', EV['create'], 'rise', 0.5), ('参与创造知识', EV['create'], 'dong', 0.9),
           ('表情包', EV['meme'] + 0.08, 'gate', 0.55), ('片名·蓄力', EV['afs'], 'rise', 0.6), ('AI for Science', EV['afs'], 'dong', 1.0),
-          ('转回国内', EV['bridge'], 'swish', 0.4)]
+          ('转回国内', EV['bridge'], 'swish', 0.4),
+          ('研究院所', wt(22, '科研院所') + 0.05, 'thud', 0.18), ('高校', wt(22, '高校') + 0.05, 'thud', 0.18), ('科技企业', wt(22, '科技企业') + 0.05, 'thud', 0.18),
+          ('章节卡·化工', EV['ch_in'], 'gate', 0.45), ('章节卡收', EV['cut26'], 'whoosh', 0.4),
+          ('实验室→工厂', S[29]['start'] + 0.15, 'swish', 0.4), ('资源条', S[34]['start'], 'thud', 0.2),
+          ('曲线栽下去', EV['fall'], 'thud', 0.55), ('死亡之谷', EV['valley'], 'dong', 1.0)]
     return P
 
 def build_audio():
-    RAW = {'vo': load(VO_WAV), 'cam': load(os.path.join(MAT, '口播', '1080-压缩版.mp4'))}
+    RAW = {'vo': load(VO_WAV), 'cam': load(os.path.join(MAT, '口播', '1080-压缩版.mp4')), 'r20': load(os.path.join(MAT, '口播', '科大讯飞1024结尾-声音克隆.mp3'))}
     def rms_src(src): return np.sqrt(np.mean(np.concatenate([RAW[src][int(a * SR):int(b * SR)] for a, b, o, sr in audio_pieces if sr == src]) ** 2))
-    gcam = rms_src('vo') / rms_src('cam')
+    GN = {k: rms_src('vo') / rms_src(k) for k in ('vo', 'cam', 'r20')}       # 三种录音响度对齐
     N = int((DUR + 0.5) * SR); voice = np.zeros((N, 2), np.float32)
     for a0, a1, o, sr in audio_pieces:
-        x = RAW[sr][int(a0 * SR):int(a1 * SR)] * (gcam if sr == 'cam' else 1.0); i = int((o + PRE) * SR); n = min(len(x), N - i)
+        x = RAW[sr][int(a0 * SR):int(a1 * SR)] * GN[sr]; i = int((o + PRE) * SR); n = min(len(x), N - i)
         fd = np.ones(n, np.float32); k = int(0.025 * SR); fd[:k] = np.linspace(0, 1, k); fd[-k:] = np.linspace(1, 0, k)
         voice[i:i + n] += x[:n] * fd[:, None]
     vmask = np.abs(voice).mean(1) > 0; v_db = db(voice[vmask])
@@ -353,9 +363,9 @@ def build_audio():
     return voice, music, sfx, rep, v_db, vmask
 
 if mode == 'stills':
-    pts = [(n_, PRE + t_) for n_, t_ in [('≠', EV['neq'] + 0.3), ('写文章/总结', EV['lst'] + 0.5), ('向内索取·整理', EV['tidy'] + 0.8), ('向外延伸', EV['outward'] + 0.8),
-           ('新的规律', EV['rule'] + 1.4), ('出镜12', S[12]['start'] + 2), ('使用知识', EV['use'] + 0.4), ('参与创造知识', EV['create'] + 0.9), ('表情包', EV['meme'] + 0.6),
-           ('片名前', EV['afs'] - 0.6), ('片名', EV['afs'] + 1.2), ('转国内', EV['bridge'] + 0.5)]]
+    pts = [(n_, PRE + t_) for n_, t_ in [('苦·周期长', S[19]['start'] + 0.5), ('三类机构', wt(22, '科技企业') + 0.4), ('探索', S[23]['start'] + 0.6),
+           ('章节卡', EV['ch_in'] + 0.5), ('化工', S[26]['start'] + 0.5), ('头痛', S[27]['start'] + 1.2), ('实验室', S[28]['start'] + 1.0), ('→工厂', S[29]['start'] + 1.5),
+           ('冷凝管', S[30]['start'] + 0.7), ('调参数', S[32]['start'] + 1.2), ('每多试一次', S[34]['start'] + 1.5), ('曲线', EV['fall'] - 0.2), ('栽下去', EV['fall'] + 0.3), ('死亡之谷', EV['valley'] + 0.8)]]
     ims = []
     for name, tt in pts:
         im = Image.fromarray(np.clip(frame(tt), 0, 255).astype(np.uint8)).resize((640, 360)); ImageDraw.Draw(im).text((8, 6), name, fill=(255, 230, 0), font=font(F_MED, 22)); ims.append(im)

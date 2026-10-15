@@ -18,7 +18,7 @@ def nchars(s): return [m.group(0) for m in re.finditer(r'[一-鿿]|[A-Za-z]+|\d+
 # ---------------------------------------------------------------- 1. 时间线：每行用真实录音（画外音 wav / 出镜视频），按字卡点
 import difflib
 takes = json.load(open(ALIGN))
-SKIP_ROWS = {20}                       # 第 20 行没录，先拿掉
+SKIP_ROWS = set()                      # 第 20 行已补录（声音克隆）
 SHOTS = [(i, s) for i, s in enumerate(SH, 1) if s[0] not in SKIP_ROWS]
 rows = sorted({s[0] for _, s in SHOTS})
 CAM_ROWS = [2, 4, 5, 6, 7, 8, 10, 12, 16, 18, 19, 21]

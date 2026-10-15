@@ -3,7 +3,7 @@ import os, re, json, subprocess, difflib, sys
 ASR = '/home/claude/asr'
 BIN = f'{ASR}/sherpa-onnx-v1.13.8-linux-x64-static/bin/sherpa-onnx-offline'
 MD = f'{ASR}/sherpa-onnx-sense-voice-zh-en-ja-ko-yue-2024-07-17'
-SRC16 = {'vo': f'{ASR}/vo16.wav', 'cam': f'{ASR}/cam16.wav'}
+SRC16 = {'vo': f'{ASR}/vo16.wav', 'cam': f'{ASR}/cam16.wav', 'r20': f'{ASR}/r20_16.wav'}
 
 # 选用的录音：(片段起, 片段止, 这段里实际念的脚本原文, 要用的那部分)
 TAKES = [
@@ -41,6 +41,8 @@ CAM = [
  (108.90, 125.20, '希望在今年科大讯飞全球1024开发者节上，我们能看到更多AI从技术突破走向实际应用。利好的，也不仅是向未知探索的科学研究，还有你我这样的，每个普通人的生活。而这样的进步，值得所有人期待。'),
 ]
 TAKES += [(a, b, said, None, 'cam') for a, b, said in CAM]
+# 第 20 行补录（声音克隆，只有音频）
+TAKES.append((0.05, 17.55, '而这也是今年科大讯飞全球1024开发者节我最关注的地方。在我看来，AI接下来的竞争，会越来越考验它在真实场景创造的价值。从科研，到教育、医疗、工业，最后再落到个人的生活。只有使用它的人感受到了变化，AI才算有了着落。', None, 'r20'))
 
 def norm_chars(s):
     """把脚本拆成「可对齐字符」列表：汉字、数字、字母串各算一个"""
