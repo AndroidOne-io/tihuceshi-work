@@ -3,6 +3,8 @@ import sys, os, re, json, math
 import numpy as np, cv2
 from kx import *
 from shots import SH
+PAUSE_OVR = globals().get('PAUSE_OVR', {})          # 口播停顿：镜号 → 停顿秒数（画面和音乐顶上来）
+SH = [tuple(list(x[:8]) + [PAUSE_OVR.get(k, x[8])]) for k, x in enumerate(SH, 1)]
 import infographics as IG
 import kongjing as KJ
 
