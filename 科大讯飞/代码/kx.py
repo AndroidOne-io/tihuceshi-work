@@ -13,9 +13,9 @@ F_TITLE = os.path.join(FD, '优设标题黑.ttf')
 F_BRUSH = os.path.join(FD, '杨任东竹石体-Heavy.ttf')
 F_SUB = os.path.join(FD, 'SmileySans-Oblique.ttf')
 F_NUM = os.path.join(FD, 'BebasNeue-Regular.ttf')
-F_BLACK = '/usr/share/fonts/opentype/noto/NotoSansCJK-Black.ttc'
-F_BOLD = '/usr/share/fonts/opentype/noto/NotoSansCJK-Bold.ttc'
-F_MED = '/usr/share/fonts/opentype/noto/NotoSansCJK-Medium.ttc'
+F_BLACK = os.path.join(FD, 'NotoSansCJK-Black.ttc')        # 思源黑体，已放进仓库字体目录
+F_BOLD = os.path.join(FD, 'NotoSansCJK-Bold.ttc')        # 思源黑体，已放进仓库字体目录
+F_MED = os.path.join(FD, 'NotoSansCJK-Medium.ttc')        # 思源黑体，已放进仓库字体目录
 
 # ---------------------------------------------------------------- 配色（RGB）
 BG0 = (11, 16, 27)        # 底

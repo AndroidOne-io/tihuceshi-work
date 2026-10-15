@@ -8,3 +8,5 @@ __pycache__/
 *.part
 *.ytdl
 .repo_memory/
+科大讯飞/成片输出/
+__pycache__/

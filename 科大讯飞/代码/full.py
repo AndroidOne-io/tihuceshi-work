@@ -8,7 +8,7 @@ sys.argv = ['timeline.py', sys.argv[1], sys.argv[2]]
 OUT = sys.argv[2]
 HERE = os.path.dirname(os.path.abspath(__file__))
 # 口播停顿（只停在全屏画面上）：开场问题、最重的事实、向内/向外对比、论点大字、包袱、片名、转国内
-PAUSE_OVR = {1: 1.6, 8: 1.2, 11: 1.0, 13: 1.8, 15: 0.8, 17: 2.5, 18: 1.0, 25: 1.0, 36: 1.8, 47: 1.0, 50: 1.2, 60: 0.8, 70: 1.0}
+PAUSE_OVR = {1: 1.6, 8: 1.2, 11: 1.0, 13: 0.6, 15: 0.8, 17: 2.5, 18: 1.0, 25: 1.0, 36: 0.6, 47: 1.0, 50: 1.2, 60: 0.8, 70: 1.0}
 exec(open(os.path.join(HERE, 'timeline.py'), encoding='utf-8').read().split("if __name__ == '__main__':")[0])
 from v4 import *
 from v3 import badge_table
@@ -160,9 +160,11 @@ C_LST = make_card(150, 150, 'rect', 24, TEAL, 0.62, None, 'list', rim=0.5)
 W_IN = shadow(text('向内索取', F_BLACK, 104, WHITE, 0.08), 10, (0, 4), 180)
 W_OUT = shadow(glow_rgba(text('向外延伸', F_BLACK, 104, GOLD, 0.08), GOLD, 18, 0.4), 10, (0, 4), 180)
 
-def pip2(f, t, cx=250, cy=H - 255, d=320, u=1.0):
-    if u <= 0: return f
-    d2 = int(d * back_out(u)); fr = cover(cam_frame(t), d2, d2, 0.5, 0.32)
+def pip2(f, t, cx=250, cy=H - 255, d=320, u=1.0, out=0.0):
+    if u <= 0 or out >= 1: return f
+    d2 = int(d * back_out(u) * (1 - ease_in(out, 2)))
+    if d2 < 8: return f
+    fr = cover(cam_frame(t), d2, d2, 0.5, 0.32)
     m = Image.new('L', (d2, d2), 0); ImageDraw.Draw(m).ellipse([2, 2, d2 - 3, d2 - 3], fill=255)
     im = Image.fromarray(np.dstack([fr, np.array(m)]).astype(np.uint8), 'RGBA')
     ring = Image.new('RGBA', (d2 + 10, d2 + 10), (0, 0, 0, 0)); ImageDraw.Draw(ring).ellipse([1, 1, d2 + 8, d2 + 8], outline=(255, 255, 255, 220), width=3)
@@ -199,7 +201,8 @@ def v1011(t):
     put(f, C_LST, KC[0] + 90, KC[1], ease_out(seg(t, EV['lst'] - 0.1, EV['lst'] + 0.2)) * ia, scale=0.8 + 0.2 * back_out(seg(t, EV['lst'] - 0.1, EV['lst'] + 0.3)))
     put(f, W_IN, KC[0] - 250, KC[1] - KR - 70, ease_out(seg(t, EV['inward'], EV['inward'] + 0.3)) * (1 - 0.75 * outk))
     put(f, W_OUT, KC[0] + 420, KC[1] - KR - 70, ease_out(seg(t, EV['outward'] + 0.3, EV['outward'] + 0.6)))
-    return pip2(f, t, u=ease_out(seg(t, EV['cut10'], EV['cut10'] + 0.4)))
+    out = seg(t, last_voice(11) - 0.35, last_voice(11) - 0.05)            # 口播一停（画面定住）小窗就收掉
+    return pip2(f, t, u=ease_out(seg(t, EV['cut10'], EV['cut10'] + 0.4)), out=out)
 
 # ================================================================ 13 大字：使用知识 → 参与创造知识
 T_USE = shadow(text('使用知识', F_BLACK, 130, (150, 155, 166), 0.08), 10, (0, 4), 160)
@@ -307,7 +310,7 @@ A_OUT, B_OUT = WIN if WIN else (0.0, DUR)
 
 # ================================================================ 声音
 SR = 44100
-MUSD = '/home/claude/aliang2052/tempsucai/materials/audio/音乐素材/'
+MUSD = os.path.join(REPO, '音乐素材', '旧库') + '/'      # 旧库里用到的曲子和 7 个音效（原在 aliang2052/Tempsucai）
 def load(p):
     subprocess.run(['ffmpeg', '-v', 'error', '-y', '-i', p, '-vn', '-ac', '2', '-ar', str(SR), f'{OUT}/_t.wav'], check=True)
     with wave.open(f'{OUT}/_t.wav') as w: return np.frombuffer(w.readframes(w.getnframes()), np.int16).reshape(-1, 2).astype(np.float32) / 32768
@@ -394,7 +397,7 @@ if mode == 'stills':
 
 if mode == 'video':
     wr = Writer(f'{OUT}/win_video.mp4', FPS, crf=18)
-    for n in range(int(A_OUT * FPS), int(B_OUT * FPS)): wr.write(frame(n / FPS))
+    for n in range(int(round(A_OUT * FPS)), int(round(B_OUT * FPS))): wr.write(frame(n / FPS))   # 按帧号切，分段拼接不丢帧不重帧
     wr.close(); print('video ok', A_OUT, B_OUT)
 
 if mode in ('audio', 'check'):
