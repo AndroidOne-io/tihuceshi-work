@@ -1,4 +1,4 @@
-# 第一版剪辑：按真实口播卡点，出镜位用占位画面
+# 第二版剪辑：画外音 + 出镜视频都按真实口播卡点
 import sys, os, re, json, math
 import numpy as np, cv2
 from kx import *
@@ -8,65 +8,83 @@ import kongjing as KJ
 
 ALIGN = sys.argv[1] if len(sys.argv) > 1 else 'align.json'
 VO_WAV = os.path.join(MAT, '口播', '非出镜美化.wav')
-SUB_FIX = {'科研院所': '研究院所', '蛋白质设计项目': '蛋白质实验项目'}   # 按实际念的出字幕
+SUB_FIX = {'科研院所': '研究院所', '蛋白质设计项目': '蛋白质实验项目', '还没找到': '还没有找到', '科学家做什么？': '科学家做什么呢？'}   # 按实际念的出字幕
 ROW_GAP, LEAD, TAIL = 0.30, 0.10, 0.32
 
 def nchars(s): return [m.group(0) for m in re.finditer(r'[一-鿿]|[A-Za-z]+|\d+(?:\.\d+)?', s)]
 
-# ---------------------------------------------------------------- 1. 时间线：有录音的行按真实时间，没录音的按语速估
+# ---------------------------------------------------------------- 1. 时间线：每行用真实录音（画外音 wav / 出镜视频），按字卡点
+import difflib
 takes = json.load(open(ALIGN))
-rate = sum(len(t['chars']) for t in takes) / sum(t['chars'][-1][3] - t['chars'][0][3] + 0.3 for t in takes)   # 字/秒
-VO_ROWS = sorted({r for r, *_ in SH if r in (3, 9, 11, 13, 14, 15, 17)} | {18})
+SKIP_ROWS = {20}                       # 第 20 行没录，先拿掉
+SHOTS = [(i, s) for i, s in enumerate(SH, 1) if s[0] not in SKIP_ROWS]
+rows = sorted({s[0] for _, s in SHOTS})
+CAM_ROWS = [2, 4, 5, 6, 7, 8, 10, 12, 16, 18, 19, 21]
 row_takes = {}
+cam_iter = iter(CAM_ROWS)
 for tk in takes:
-    for r in VO_ROWS:
-        rowtxt = ''.join(s[1] for s in SH if s[0] == r)
-        if ''.join(nchars(tk['use'])) in ''.join(nchars(rowtxt)) and len(nchars(tk['use'])) > 0:
-            row_takes.setdefault(r, []).append(tk); break
+    if tk['src'] == 'cam':
+        r = next(cam_iter); row_takes.setdefault(r, []).append((1e9, tk)); continue
+    u = ''.join(nchars(tk['use']))
+    for r in rows:
+        rt = ''.join(nchars(''.join(x[1] for _, x in SHOTS if x[0] == r)))
+        if u and u in rt: row_takes.setdefault(r, []).append((rt.index(u), tk)); break
+for r in row_takes: row_takes[r] = [tk for _, tk in sorted(row_takes[r], key=lambda x: x[0])]
 
-shots, audio_pieces = [], []   # shots: dict(i,row,text,start,end,chars=[(char,t_out)])
+shots, audio_pieces = [], []          # audio_pieces: (源起, 源止, 输出起, 源)
 t = 0.0
-rows = sorted({s[0] for s in SH})
 for r in rows:
-    rs = [(i, s) for i, s in enumerate(SH, 1) if s[0] == r]
-    has_vo = r in row_takes
-    # 本行可用的录音字流（只对画外音镜头）
-    stream = []
-    if has_vo:
-        for tk in row_takes[r]:
-            a0 = tk['chars'][0][3] - LEAD; a1 = tk['chars'][-1][3] + TAIL
-            out0 = t
-            audio_pieces.append((a0, a1, out0))
-            for c, _, _, ct in tk['chars']: stream.append((c, out0 + (ct - a0)))
-            t = out0 + (a1 - a0) + 0.08
-        row_end = t
-        t_row0 = audio_pieces[-len(row_takes[r])][2]
-    k = 0; tt = t_row0 if has_vo else t
-    for j, (i, s) in enumerate(rs):
-        txt = s[1].strip(); cs = nchars(txt)
-        if has_vo and s[2] != '真人全屏' and k < len(stream):
-            mine = stream[k:k + len(cs)]; k += len(cs)
-            st = tt if j == 0 else max(tt, mine[0][1] - 0.06)
-            shots.append(dict(i=i, row=r, text=txt, start=st, chars=mine, kind=s[2], vo=True, pause=s[8] or 0))
-            tt = st
-        else:
-            d = len(cs) / rate + 0.25
-            st = tt if not has_vo else row_end
-            if has_vo: row_end += d
-            ch = [(c, st + (q + 0.5) * (d - 0.25) / max(1, len(cs))) for q, c in enumerate(cs)]
-            shots.append(dict(i=i, row=r, text=txt, start=st, chars=ch, kind=s[2], vo=False, pause=s[8] or 0, est=d))
-            tt = st + d + (s[8] or 0)
-            if has_vo: row_end = tt
-    # 本行结束
-    if has_vo:
-        t = max(row_end, t)
-    else:
-        t = tt
+    rs = [(i, x) for i, x in SHOTS if x[0] == r]
+    said = [(c, tk['src'], ct, n) for n, tk in enumerate(row_takes[r]) for c, _, _, ct in tk['chars']]
+    script, owner = [], []
+    for j, (i, x) in enumerate(rs):
+        cs = nchars(x[1]); script += cs; owner += [j] * len(cs)
+    sm = difflib.SequenceMatcher(None, [c.lower() for c in script], [c[0].lower() for c in said], autojunk=False)
+    mp = [None] * len(script)
+    for b in sm.get_matching_blocks():
+        for k in range(b.size): mp[b.a + k] = b.b + k
+    last = 0
+    for k in range(len(mp)):            # 没对上的字：沿用前一个
+        if mp[k] is None: mp[k] = min(last + 1, len(said) - 1) if k else 0
+        last = mp[k]
+    first_of = {j: owner.index(j) for j in range(len(rs))}
+    # 切段：换录音处、带停顿的镜头之后
+    cuts = {}                            # said 下标 → 停顿秒数
+    for j, (i, x) in enumerate(rs[:-1]):
+        if x[8]: cuts[mp[first_of[j + 1]]] = x[8]
+    pieces, p0 = [], 0
+    for m in range(1, len(said) + 1):
+        if m == len(said) or said[m][3] != said[m - 1][3] or m in cuts:
+            pieces.append((p0, m, cuts.get(m, 0.08 if m < len(said) else 0))); p0 = m
+    out_t = [0.0] * len(said)
+    row0 = t
+    for a, b, gap in pieces:
+        a0 = said[a][2] - LEAD; a1 = said[b - 1][2] + TAIL
+        audio_pieces.append((a0, a1, t, said[a][1]))
+        for m in range(a, b): out_t[m] = t + (said[m][2] - a0)
+        t = t + (a1 - a0) + gap
+    for j, (i, x) in enumerate(rs):
+        ks = [k for k in range(len(script)) if owner[k] == j]
+        ch = [(script[k], out_t[mp[k]]) for k in ks]
+        st = row0 if j == 0 else ch[0][1] - 0.06
+        shots.append(dict(i=i, row=r, text=x[1].strip(), start=st, chars=ch, kind=x[2], vo=True, pause=x[8] or 0))
+    t += rs[-1][1][8] or 0
     t += ROW_GAP
-TOTAL = t + 0.6
+TOTAL = t + 0.8
 for a, b in zip(shots, shots[1:]): a['end'] = b['start']
 shots[-1]['end'] = TOTAL
-for s in shots: s['dur'] = s['end'] - s['start']
+for x in shots: x['dur'] = x['end'] - x['start']
+rate = sum(len(x['chars']) for x in shots) / TOTAL
+
+def src_at(t, src='cam'):
+    """输出时间 → 源素材时间（落在空隙里就取最近的一端）"""
+    best = None
+    for a0, a1, o, sr in audio_pieces:
+        if sr != src: continue
+        if o <= t <= o + (a1 - a0): return a0 + (t - o)
+        d = min(abs(t - o), abs(t - o - (a1 - a0)))
+        if best is None or d < best[0]: best = (d, a0 if t < o else a1)
+    return best[1] if best else 0.0
 
 # ---------------------------------------------------------------- 2. 字幕：每镜按标点切成 ≤15 字的条，按字时间出
 PUN = '，。？！；：、'
@@ -208,16 +226,25 @@ def v_rec(k, a, b, box, ry=(-10, -5)):
         return f
     return fn
 
-def v_host(stickers=()):
-    """出镜占位：等出镜视频传上来替换"""
+CAMV = Vid(os.path.join(MAT, '口播', '1080-压缩版.mp4'))
+CUR_T = [0.0]
+def cam_frame(t):
+    """出镜画面：原片是镜像录的，水平翻回来"""
+    return cv2.flip(CAMV.get(src_at(t, 'cam')), 1)
+
+def v_host(stickers=(), z0=1.0):
+    """真人出镜：全屏口播，轻推；可在右侧弹白框贴纸"""
     def fn(tl, dur):
-        f = _BGN.copy()
-        put(f, B_HOST, W / 2, H / 2 - 40, 1.0, scale=1.0 + 0.02 * tl / max(dur, 0.1))
+        fr = cover(cam_frame(CUR_T[0]), W, H).astype(np.float32)
+        z = z0
+        if dur > 6.0 and tl > dur * 0.5: z = 1.1 if z0 < 1.04 else 1.0     # 长镜头中间跳一次景别
+        f = zoom(fr, z + 0.03 * tl / max(dur, 0.1), 0.5, 0.35)
         for j, (im, t0, x, y, ang) in enumerate(stickers):
             k = seg(tl, t0, t0 + 0.35)
             if k > 0: put(f, im, x, y, k, scale=0.7 + 0.3 * back_out(k), angle=ang)
         return f
     return fn
+IG.host_frame = lambda t, t0=0.0: cam_frame(CUR_T[0])
 
 def v_meme():
     A = img('3')[:420]
@@ -272,27 +299,24 @@ def visual_for(s, shot_by_i):
      58: v_protein(fold=(0.0, 1.8)), 59: v_shot('8', (835, 50, 1005, 215), maxk=3.0, white=True),
      60: v_video([('10', 72.0, 80.9)]),
      62: v_host([(ST_OAI, 0.2, 1500, 300, -3), (ST_REC, 1.4, 1560, 560, 2), (ST_P8, 2.6, 1480, 820, -2)]),
-     66: v_shot('9', (520, 120, 1120, 700), maxk=1.9), 68: v_fn(IG.five_scenes, step=max(0.5, (dur_of(68) - 1.0) / 5)),
      70: v_shot('9', (180, 280, 760, 600), (980, 280, 1480, 600), maxk=1.9),
     }
     if i == 11: return lambda tl, dur: IG.knowledge(tl + dur_of(10), dur_of(10) + dur, split=dur_of(10))
-    if i == 63:
-        d63 = dur_of(63); d64 = dur_of(64)
-        txt = shot_by_i[64]['text']; L = len(txt)
-        on = [d63 + d64 * txt.index(w) / L for w in ('提出方案', '调用工具', '模拟计算', '辅助验证')]
-        return lambda tl, dur: IG.four_steps(tl, d63 + d64, on=[o - 0.1 for o in on])
-    if i == 64:
-        d63 = dur_of(63); d64 = dur_of(64); txt = s['text']; L = len(txt)
-        on = [d63 + d64 * txt.index(w) / L for w in ('提出方案', '调用工具', '模拟计算', '辅助验证')]
-        return lambda tl, dur: IG.four_steps(tl + d63, d63 + d64, on=[o - 0.1 for o in on])
+    if i in (63, 64):
+        s63, s64 = shot_by_i[63], shot_by_i[64]; txt = s64['text']
+        on = []
+        for w in ('提出方案', '调用工具', '模拟计算', '辅助验证'):
+            k = len(nchars(txt[:txt.index(w)])); on.append(s64['chars'][k][1] - s63['start'] - 0.05)
+        tot = s63['dur'] + s64['dur']; off = 0.0 if i == 63 else s63['dur']
+        return lambda tl, dur: IG.four_steps(tl + off, tot, on=on)
     if i in V: return V[i]
-    return v_host()
+    return v_host(z0=1.0 if i % 2 else 1.08)
 
 # ---------------------------------------------------------------- 4. 转场：截图/录屏/素材之间甩镜，大字和数字有重击
-WHIP_IN = {2, 4, 7, 8, 19, 26, 38, 40, 46, 51, 56, 66, 70}
+WHIP_IN = {2, 4, 7, 8, 19, 26, 38, 40, 46, 51, 56, 70}
 def frame_at(t, shot_by_i, vis):
     s = next(x for x in shots if x['start'] <= t < x['end']) if t < TOTAL else shots[-1]
-    tl = t - s['start']
+    tl = t - s['start']; CUR_T[0] = t
     f = vis[s['i']](tl, s['dur'])
     if s['i'] in WHIP_IN and tl < 0.22: f = whip(f, 1 - tl / 0.22)
     nxt = [x for x in shots if x['start'] >= s['end'] - 1e-6][:1]

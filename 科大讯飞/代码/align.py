@@ -3,7 +3,7 @@ import os, re, json, subprocess, difflib, sys
 ASR = '/home/claude/asr'
 BIN = f'{ASR}/sherpa-onnx-v1.13.8-linux-x64-static/bin/sherpa-onnx-offline'
 MD = f'{ASR}/sherpa-onnx-sense-voice-zh-en-ja-ko-yue-2024-07-17'
-SRC16 = f'{ASR}/vo16.wav'
+SRC16 = {'vo': f'{ASR}/vo16.wav', 'cam': f'{ASR}/cam16.wav'}
 
 # 选用的录音：(片段起, 片段止, 这段里实际念的脚本原文, 要用的那部分)
 TAKES = [
@@ -25,6 +25,23 @@ TAKES = [
 # 第9行前半句「面对科研周期长、实验成本高、专业门槛高等难题，」只在 37.6 那一遍里完整
 TAKES.insert(4, (37.55, 42.75, '面对科研周期长、实验成本高、专业门槛高等难题，我国的研究院所。', '面对科研周期长、实验成本高、专业门槛高等难题，'))
 
+# 出镜视频（1080-压缩版.mp4）：一条连贯口播，每行一段
+CAM = [
+ (0.45, 4.60, '数学界里人类都还没有找到的答案，全让AI给攻克了？'),
+ (4.85, 13.80, '而实现这一切的，居然来自一个还没公开的内部模型。不只是数量多，含金量也高到离谱，这里面不乏人类尚未解决的研究问题。'),
+ (14.10, 29.30, '要知道，数学研究和普通任务完全是两码事。咱们日常让AI写文章、总结资料，本质上是向内索取，是在现有知识里进行整理。但数学研究，更多的是向外延伸，在人类知识边界之外寻找新的规律。'),
+ (29.70, 37.75, '所以OpenAI Math这次真正带来的冲击是，AI的角色在发生变化。从“使用知识”，走向“参与创造知识”。'),
+ (38.00, 41.95, '别再说什么金字塔尖的明珠了，AI干的就是明珠。'),
+ (42.30, 51.15, '如果这种AI能进入更多科研工作，会带来什么变化？而这，也就是大家在说的：AI for Science。但这场变化并不只发生在海外。'),
+ (51.45, 55.30, '当AI真正进入科研一线，它具体能够帮助科学家做什么呢？'),
+ (55.65, 62.35, '最难受的是，哪怕在实验室阶段无论表现的多优秀，也有可能在中试阶段遭遇“死亡之谷”。'),
+ (62.70, 73.45, '在进入实体工厂之前，先通过数字化手段完成更多计算和验证，让工程师有机会更早发现方案中的问题，再推进后续实验与工程验证。'),
+ (74.20, 81.35, '以科大讯飞为代表的中国源头AI技术，正在把自主可控的源头AI技术带进科研核心流程。'),
+ (82.00, 108.55, '回到最开始的OpenAI Math，再看国内在化工研发和蛋白质设计上的实践，会发现AI for Science并不是简单地让AI“多懂一些科学知识”，而是让它真正参与到提出方案、调用工具、模拟计算和辅助验证的科研流程中。当然，AI还不能替代科学家的判断，但它正在帮助科研人员减少重复试错，更快地靠近那些过去需要很长时间才能找到的答案。'),
+ (108.90, 125.20, '希望在今年科大讯飞全球1024开发者节上，我们能看到更多AI从技术突破走向实际应用。利好的，也不仅是向未知探索的科学研究，还有你我这样的，每个普通人的生活。而这样的进步，值得所有人期待。'),
+]
+TAKES += [(a, b, said, None, 'cam') for a, b, said in CAM]
+
 def norm_chars(s):
     """把脚本拆成「可对齐字符」列表：汉字、数字、字母串各算一个"""
     out = []
@@ -33,9 +50,9 @@ def norm_chars(s):
     return out
 
 NUM = {'三点零': '3.0', '四百': '400'}
-def asr(a, b, tag):
+def asr(a, b, tag, src='vo'):
     wav = f'{ASR}/take_{tag}.wav'
-    subprocess.run(['ffmpeg', '-v', 'error', '-y', '-ss', f'{a}', '-to', f'{b}', '-i', SRC16, wav], check=True)
+    subprocess.run(['ffmpeg', '-v', 'error', '-y', '-ss', f'{a}', '-to', f'{b}', '-i', SRC16[src], wav], check=True)
     r = subprocess.run([BIN, f'--sense-voice-model={MD}/model.int8.onnx', '--sense-voice-use-itn=1', f'--tokens={MD}/tokens.txt', '--num-threads=2', wav],
                        capture_output=True, text=True)
     js = [l for l in (r.stdout + r.stderr).splitlines() if l.startswith('{')][-1]
@@ -47,8 +64,8 @@ def asr(a, b, tag):
     return d['text'], toks
 
 def align_take(i, take):
-    a, b, said, use = take
-    text, toks = asr(a, b, i)
+    a, b, said, use = take[:4]; src = take[4] if len(take) > 4 else 'vo'
+    text, toks = asr(a, b, f'{src}{i}', src)
     sc = norm_chars(said)
     S = [c for c, _, _ in sc]; T = [t for t, _ in toks]
     sm = difflib.SequenceMatcher(None, S, T, autojunk=False)
@@ -70,10 +87,10 @@ def align_take(i, take):
     if use:
         lo = said.index(use); hi = lo + len(use)
     chars = [(c, s0, e0, t) for (c, s0, e0), t in zip(sc, times) if s0 >= lo and e0 <= hi]
-    return {'a': a, 'b': b, 'asr': text, 'said': said, 'use': said[lo:hi], 'chars': chars, 'match': matched / max(1, len(S))}
+    return {'src': src, 'a': a, 'b': b, 'asr': text, 'said': said, 'use': said[lo:hi], 'chars': chars, 'match': matched / max(1, len(S))}
 
 if __name__ == '__main__':
     out = [align_take(i, tk) for i, tk in enumerate(TAKES)]
     for o in out:
-        print(f"{o['a']:7.2f} 对上 {o['match']:.0%}  {o['use'][:24]}…  首字 {o['chars'][0][3]:.2f}  末字 {o['chars'][-1][3]:.2f}")
+        print(f"{o['src']:3s} {o['a']:7.2f} 对上 {o['match']:.0%}  {o['use'][:24]}…  首字 {o['chars'][0][3]:.2f}  末字 {o['chars'][-1][3]:.2f}")
     json.dump(out, open(sys.argv[1], 'w'), ensure_ascii=False, indent=1)
