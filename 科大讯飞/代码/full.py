@@ -8,7 +8,7 @@ sys.argv = ['timeline.py', sys.argv[1], sys.argv[2]]
 OUT = sys.argv[2]
 HERE = os.path.dirname(os.path.abspath(__file__))
 # 口播停顿（只停在全屏画面上）：开场问题、最重的事实、向内/向外对比、论点大字、包袱、片名、转国内
-PAUSE_OVR = {1: 1.6, 8: 1.2, 11: 1.0, 13: 1.8, 15: 0.8, 17: 2.5, 18: 1.0, 25: 1.0, 36: 1.8}
+PAUSE_OVR = {1: 1.6, 8: 1.2, 11: 1.0, 13: 1.8, 15: 0.8, 17: 2.5, 18: 1.0, 25: 1.0, 36: 1.8, 47: 1.0, 50: 1.2}
 exec(open(os.path.join(HERE, 'timeline.py'), encoding='utf-8').read().split("if __name__ == '__main__':")[0])
 from v4 import *
 from v3 import badge_table
@@ -266,7 +266,10 @@ VIS = {1: v1, 2: F2, 3: lambda t: F3a(t) if t < EV['split3'] else whip(F3b(t), m
        9: host(1.0, [(NEQ_A, EV['neqA'] - 0.05, 1540, 330), (NEQ, EV['neq'] - 0.05, 1540, 488), (NEQ_B, EV['neqB'] - 0.05, 1540, 640)]),
        10: v1011, 11: v1011, 12: host(1.08), 13: v13, 14: host(1.0), 15: v15, 16: host(1.08), 17: v17, 18: v18}
 CUTS = ['cut2', 'cut4', 'cut5', 'cut7', 'cut9', 'cut10', 'cut19']
-exec(open(os.path.join(HERE, 'seg3_vis.py'), encoding='utf-8').read())
+QUIET = {'cut22', 'cut26', 'cut30', 'cut32', 'cut33', 'cut35'}   # 同一段落里素材换素材：硬切，不甩镜、不加转场声（避免音效泛滥）
+SFX_MORE = []; STILLS = []
+for _f in ('seg3_vis.py', 'seg4_vis.py', 'seg5_vis.py', 'seg6_vis.py'):
+    if os.path.exists(os.path.join(HERE, _f)): exec(open(os.path.join(HERE, _f), encoding='utf-8').read())
 _old = None
 def vis_of(i):
     global _old
@@ -287,6 +290,7 @@ def frame(t_out):
     s = next(x for x in shots if x['start'] <= t < x['end'])
     f = vis_of(s['i'])(t)
     for c in CUTS + ['bridge']:
+        if c in QUIET: continue
         t0 = EV[c]
         if 0 <= t - t0 < 0.2: f = whip(f, 1 - (t - t0) / 0.2)
         if 0 < t0 - t < 0.1: f = whip(f, (0.1 - (t0 - t)) / 0.1 * 0.8)
@@ -307,11 +311,11 @@ def db(x): return 20 * np.log10(np.sqrt((x ** 2).mean()) + 1e-9)
 
 # 配乐段落：(曲子, 曲内对齐点, 时间线对齐点, 从, 到)
 MUSIC = [dict(file='音乐/悬疑-Dance for me walls.mp3', src=21.09, at=EV['boom'], frm=EV['boom'] - 2.5, to=EV['bridge'] + 0.9, fin=0.4, fout=1.1, dip=EV['boom']),
-         dict(file='音乐/Time - Hans Zimmer.mp3', src=30.0, at=EV['bridge'], frm=EV['bridge'] - 0.3, to=EV['fall'] - 0.02, fin=1.0, fout=0.12, dip=None)]   # 死亡之谷：曲线栽下去那一刻配乐断掉
+         dict(file='音乐/Time - Hans Zimmer.mp3', src=30.0, at=EV['bridge'], frm=EV['bridge'] - 0.3, to=EV['fall'] - 0.02, fin=1.0, fout=0.12, dip=None),   # 死亡之谷：曲线栽下去那一刻配乐断掉
+         dict(file='音乐/In Motion - Trent Reznor & Atticus Ross.m4a', src=0.14, at=EV['cut37'], frm=EV['cut37'] - 0.05, to=EV.get('m3_end', EV['cut37'] + 40), fin=0.05, fout=1.2, dip=[EV['n400']])]
 SFX = {'rise': '上升-whoosh rise.mp3', 'whoosh': '转场-Whoosh.mp3', 'swish': '转场-Windy swish.mp3', 'gate': '重音-Gate Hit.mp3', 'thud': '重音-Thud Hit C.mp3', 'dong': '重音-咚 重磅.mp3'}
 def sfx_plan():
     P = [('蓄力→人声进', EV['voice_in'], 'rise', 0.55), ('冲进隧道', EV['voice_in'], 'thud', 0.40), ('攻克·问号炸开', EV['boom'], 'dong', 1.0)]
-    QUIET = {'cut22', 'cut26', 'cut30', 'cut32', 'cut33', 'cut35'}   # 同一段落里素材换素材：只切画面，不加转场声（避免音效泛滥）
     for c in CUTS:
         if c not in QUIET: P.append((f'转场 {c}', EV[c], 'whoosh', 0.45))
     P += [('截图换页', EV['split3'], 'swish', 0.35), ('719 停住', EV['land719'], 'gate', 0.50)]
@@ -328,7 +332,7 @@ def sfx_plan():
           ('章节卡·化工', EV['ch_in'], 'gate', 0.45), ('章节卡收', EV['cut26'], 'whoosh', 0.4),
           ('实验室→工厂', S[29]['start'] + 0.15, 'swish', 0.4), ('资源条', S[34]['start'], 'thud', 0.2),
           ('曲线栽下去', EV['fall'], 'thud', 0.55), ('死亡之谷', EV['valley'], 'dong', 1.0)]
-    return P
+    return P + SFX_MORE
 
 def build_audio():
     RAW = {'vo': load(VO_WAV), 'cam': load(os.path.join(MAT, '口播', '1080-压缩版.mp4')), 'r20': load(os.path.join(MAT, '口播', '科大讯飞1024结尾-声音克隆.mp3'))}
@@ -350,8 +354,9 @@ def build_audio():
         o0 = PRE + m['frm']; s0 = m['src'] - (m['at'] - m['frm']); n = int((m['to'] - m['frm']) * SR)
         x = tr[int(s0 * SR):int(s0 * SR) + n].copy(); i0 = int(o0 * SR)
         fi, fo = int(m['fin'] * SR), int(m['fout'] * SR); x[:fi] *= np.linspace(0, 1, fi)[:, None]; x[-fo:] *= np.linspace(1, 0, fo)[:, None]
-        if m.get('dip') is not None:
-            g0, g1 = int((m['dip'] - 0.25 - m['frm']) * SR), int((m['dip'] - 0.02 - m['frm']) * SR); x[g0:g1] *= np.linspace(1, 0.05, g1 - g0)[:, None] ** 0.5
+        dips = m.get('dip'); dips = [] if dips is None else dips if isinstance(dips, list) else [dips]
+        for dp in dips:   # 重击前 0.25 秒配乐让开
+            g0, g1 = int((dp - 0.25 - m['frm']) * SR), int((dp - 0.02 - m['frm']) * SR); x[g0:g1] *= np.linspace(1, 0.05, g1 - g0)[:, None] ** 0.5
         gu, gg = 10 ** ((v_db - 12 - m_db) / 20), 10 ** ((v_db - 5 - m_db) / 20)
         gain = gg + (gu - gg) * env[i0:i0 + len(x)]
         music[i0:i0 + len(x)] += x * gain[:len(x), None]
@@ -363,7 +368,7 @@ def build_audio():
     return voice, music, sfx, rep, v_db, vmask
 
 if mode == 'stills':
-    pts = [(n_, PRE + t_) for n_, t_ in [('苦·周期长', S[19]['start'] + 0.5), ('三类机构', wt(22, '科技企业') + 0.4), ('探索', S[23]['start'] + 0.6),
+    pts = [(n_, PRE + t_) for n_, t_ in STILLS] if STILLS else [(n_, PRE + t_) for n_, t_ in [('苦·周期长', S[19]['start'] + 0.5), ('三类机构', wt(22, '科技企业') + 0.4), ('探索', S[23]['start'] + 0.6),
            ('章节卡', EV['ch_in'] + 0.5), ('化工', S[26]['start'] + 0.5), ('头痛', S[27]['start'] + 1.2), ('实验室', S[28]['start'] + 1.0), ('→工厂', S[29]['start'] + 1.5),
            ('冷凝管', S[30]['start'] + 0.7), ('调参数', S[32]['start'] + 1.2), ('每多试一次', S[34]['start'] + 1.5), ('曲线', EV['fall'] - 0.2), ('栽下去', EV['fall'] + 0.3), ('死亡之谷', EV['valley'] + 0.8)]]
     ims = []
