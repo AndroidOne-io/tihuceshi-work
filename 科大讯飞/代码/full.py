@@ -340,6 +340,8 @@ def sfx_plan():
           ('曲线栽下去', EV['fall'], 'thud', 0.55), ('死亡之谷', EV['valley'], 'dong', 1.0)]
     return P + SFX_MORE
 
+if os.path.exists(os.path.join(HERE, 'sound.py')): exec(open(os.path.join(HERE, 'sound.py'), encoding='utf-8').read())   # 整片声音规划覆盖上面的默认值
+
 def build_audio():
     RAW = {'vo': load(VO_WAV), 'cam': load(os.path.join(MAT, '口播', '1080-压缩版.mp4')), 'r20': load(os.path.join(MAT, '口播', '科大讯飞1024结尾-声音克隆.mp3'))}
     def rms_src(src): return np.sqrt(np.mean(np.concatenate([RAW[src][int(a * SR):int(b * SR)] for a, b, o, sr in audio_pieces if sr == src]) ** 2))
@@ -351,9 +353,14 @@ def build_audio():
         voice[i:i + n] += x[:n] * fd[:, None]
     vmask = np.abs(voice).mean(1) > 0; v_db = db(voice[vmask])
     act = np.convolve(np.abs(voice).mean(1), np.ones(int(0.05 * SR)) / int(0.05 * SR), 'same') > 10 ** ((v_db - 25) / 20)
-    env = np.zeros(N, np.float32); e = 0.0; up, dn = 1 / (0.06 * SR), 1 / (0.35 * SR)
-    for k in range(N):
-        e = min(1.0, e + up) if act[k] else max(0.0, e - dn); env[k] = e
+    env = np.zeros(N, np.float32); e = 0.0; up, dn = 1 / (0.06 * SR), 1 / (0.35 * SR); hold = int(0.45 * SR); last = -10 ** 9
+    for k in range(N):                               # 说话间换气（<0.45 秒）不抬音乐，避免一呼一吸地起伏
+        if act[k]: last = k
+        e = min(1.0, e + up) if k - last < hold else max(0.0, e - dn); env[k] = e
+    hostm = np.zeros(N, np.float32)                     # 真人出镜时段（音乐再压低一档）
+    for s_ in shots:
+        if s_['i'] in globals().get('HOST_SHOTS', set()): hostm[int((PRE + s_['start']) * SR):int((PRE + s_['end']) * SR)] = 1.0
+    hostm = np.convolve(hostm, np.ones(int(0.3 * SR)) / int(0.3 * SR), 'same').astype(np.float32)
     music = np.zeros((N, 2), np.float32)
     for m in MUSIC:
         tr = load(MUSD + m['file']); r0 = m.get('ref', m['src']); m_db = db(tr[int(r0 * SR):int((r0 + 20) * SR)])   # 响度参考段
@@ -363,8 +370,9 @@ def build_audio():
         dips = m.get('dip'); dips = [] if dips is None else dips if isinstance(dips, list) else [dips]
         for dp in dips:   # 重击前 0.25 秒配乐让开
             g0, g1 = int((dp - 0.25 - m['frm']) * SR), int((dp - 0.02 - m['frm']) * SR); x[g0:g1] *= np.linspace(1, 0.05, g1 - g0)[:, None] ** 0.5
-        gu, gg = 10 ** ((v_db - 12 - m_db) / 20), 10 ** ((v_db - 5 - m_db) / 20)
-        gain = gg + (gu - gg) * env[i0:i0 + len(x)]
+        gg = 10 ** ((v_db + m.get('gap', -5) - m_db) / 20); gu = 10 ** ((v_db + m.get('under', -12) - m_db) / 20); gh = 10 ** ((v_db + m.get('host', -12) - m_db) / 20)
+        e_ = env[i0:i0 + len(x)]; h_ = hostm[i0:i0 + len(x)]
+        gain = (gg + (gu - gg) * e_) * (1 - h_) + gh * h_          # 真人出镜整段压低，不随换气起伏
         music[i0:i0 + len(x)] += x * gain[:len(x), None]
     sfx = np.zeros((N, 2), np.float32); cache = {}; rep = []
     for name, te, key, gain in sfx_plan():
