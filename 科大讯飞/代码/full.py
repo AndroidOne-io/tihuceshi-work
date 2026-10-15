@@ -8,7 +8,7 @@ sys.argv = ['timeline.py', sys.argv[1], sys.argv[2]]
 OUT = sys.argv[2]
 HERE = os.path.dirname(os.path.abspath(__file__))
 # 口播停顿（只停在全屏画面上）：开场问题、最重的事实、向内/向外对比、论点大字、包袱、片名、转国内
-PAUSE_OVR = {1: 1.6, 8: 1.2, 11: 1.0, 13: 1.8, 15: 0.8, 17: 2.5, 18: 1.0, 25: 1.0, 36: 1.8, 47: 1.0, 50: 1.2}
+PAUSE_OVR = {1: 1.6, 8: 1.2, 11: 1.0, 13: 1.8, 15: 0.8, 17: 2.5, 18: 1.0, 25: 1.0, 36: 1.8, 47: 1.0, 50: 1.2, 60: 0.8}
 exec(open(os.path.join(HERE, 'timeline.py'), encoding='utf-8').read().split("if __name__ == '__main__':")[0])
 from v4 import *
 from v3 import badge_table
@@ -284,7 +284,12 @@ def sub_now(t):
     if s is None or s['i'] in NO_SUB or t > s['chars'][-1][1] + 0.45: return ''      # 说完就收字幕
     return sub_at(t)
 
+TAIL = 1.2                                   # 片尾：最后一句说完后画面渐黑、配乐尾音放完
 def frame(t_out):
+    fade = min(1.0, max(0.0, (PRE + TOTAL + TAIL - t_out) / 2.2))
+    if fade < 1.0: return frame_(min(t_out, PRE + TOTAL - 0.02)) * fade
+    return frame_(t_out)
+def frame_(t_out):
     t = t_out - PRE; CUR_T[0] = max(t, 0)
     if t < 0: return hook(t - EV['voice_in'], dict(human=EV['human'] - EV['voice_in'], gongke=EV['boom'] - EV['voice_in']))
     s = next(x for x in shots if x['start'] <= t < x['end'])
@@ -297,7 +302,7 @@ def frame(t_out):
     subtitle(f, sub_now(t))
     return f
 
-DUR = PRE + TOTAL
+DUR = PRE + TOTAL + TAIL
 A_OUT, B_OUT = WIN if WIN else (0.0, DUR)
 
 # ================================================================ 声音
@@ -312,8 +317,9 @@ def db(x): return 20 * np.log10(np.sqrt((x ** 2).mean()) + 1e-9)
 # 配乐段落：(曲子, 曲内对齐点, 时间线对齐点, 从, 到)
 MUSIC = [dict(file='音乐/悬疑-Dance for me walls.mp3', src=21.09, at=EV['boom'], frm=EV['boom'] - 2.5, to=EV['bridge'] + 0.9, fin=0.4, fout=1.1, dip=EV['boom']),
          dict(file='音乐/Time - Hans Zimmer.mp3', src=30.0, at=EV['bridge'], frm=EV['bridge'] - 0.3, to=EV['fall'] - 0.02, fin=1.0, fout=0.12, dip=None),   # 死亡之谷：曲线栽下去那一刻配乐断掉
-         dict(file='音乐/In Motion - Trent Reznor & Atticus Ross.m4a', src=0.14, at=EV['cut37'], frm=EV['cut37'] - 0.05, to=EV.get('m3_end', EV['cut37'] + 40), fin=0.05, fout=1.2, dip=[EV['n400']])]
-SFX = {'rise': '上升-whoosh rise.mp3', 'whoosh': '转场-Whoosh.mp3', 'swish': '转场-Windy swish.mp3', 'gate': '重音-Gate Hit.mp3', 'thud': '重音-Thud Hit C.mp3', 'dong': '重音-咚 重磅.mp3'}
+         dict(file='音乐/In Motion - Trent Reznor & Atticus Ross.m4a', src=0.14, at=EV['cut37'], frm=EV['cut37'] - 0.05, to=EV.get('m3_end', EV['cut37'] + 40), fin=0.05, fout=1.2, dip=[EV['n400']]),
+         dict(file='音乐/大气史诗-破晓曙光.mp3', src=233.45, at=last_voice(71) + 1.0, frm=EV['cut61'] - 0.1, to=TOTAL + TAIL, fin=0.5, fout=2.5, dip=None, ref=190.0)]   # 尾音落在最后一句说完 1 秒后
+SFX = {'rise': '上升-whoosh rise.mp3', 'whoosh': '转场-Whoosh.mp3', 'swish': '转场-Windy swish.mp3', 'gate': '重音-Gate Hit.mp3', 'thud': '重音-Thud Hit C.mp3', 'dong': '重音-咚 重磅.mp3', 'rrise': '上声音-reverse rise.mp3'}
 def sfx_plan():
     P = [('蓄力→人声进', EV['voice_in'], 'rise', 0.55), ('冲进隧道', EV['voice_in'], 'thud', 0.40), ('攻克·问号炸开', EV['boom'], 'dong', 1.0)]
     for c in CUTS:
@@ -350,7 +356,7 @@ def build_audio():
         e = min(1.0, e + up) if act[k] else max(0.0, e - dn); env[k] = e
     music = np.zeros((N, 2), np.float32)
     for m in MUSIC:
-        tr = load(MUSD + m['file']); m_db = db(tr[int(m['src'] * SR):int((m['src'] + 20) * SR)])
+        tr = load(MUSD + m['file']); r0 = m.get('ref', m['src']); m_db = db(tr[int(r0 * SR):int((r0 + 20) * SR)])   # 响度参考段
         o0 = PRE + m['frm']; s0 = m['src'] - (m['at'] - m['frm']); n = int((m['to'] - m['frm']) * SR)
         x = tr[int(s0 * SR):int(s0 * SR) + n].copy(); i0 = int(o0 * SR)
         fi, fo = int(m['fin'] * SR), int(m['fout'] * SR); x[:fi] *= np.linspace(0, 1, fi)[:, None]; x[-fo:] *= np.linspace(1, 0, fo)[:, None]
