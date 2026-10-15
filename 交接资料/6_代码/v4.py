@@ -121,7 +121,7 @@ def stage(t, t0, t1):
     if n is not None and n > 60.7: zt += 0.08 * ease((n - 60.7) / 0.8)
     M = cv2.getRotationMatrix2D((W / 2, 560), 0, zt)
     f = cv2.warpAffine(f, M, (W, H), borderMode=cv2.BORDER_REFLECT)
-    o.pip(f, hf_small(t), x=1660, y=830, d=200); return f
+    o.pip(f, hf_small(t), x=1660, y=60, d=200); return f
 S(55.1, 68.7, stage, 'info'); X(T(55.1), 'whoosh')
 for k in range(0, 16, 3): X(T(55.1) + 0.7 + k * 0.08, 'pop')
 X(T(56.30), 'pop'); X(T(57.20), 'pop'); X(T(58.64), 'shine')
@@ -146,6 +146,7 @@ def meme(t, t0, t1):
     return o.cover(fr, int(W * z), int(H * z))[int(H * (z - 1) / 2):int(H * (z - 1) / 2) + H, int(W * (z - 1) / 2):int(W * (z - 1) / 2) + W].copy()
 S(m0, m1, meme, 'meme', out=True); X(m0, 'whoosh')
 
+exec(open('/tmp/claude-0/mock/seg3.py').read())
 # ======================= subtitles
 SUBS = json.load(open('/tmp/claude-0/build/subs_src.json'))
 def wlen(s): return sum(0.55 if ord(c) < 128 else 1.0 for c in s)

@@ -21,6 +21,11 @@ music = [
     # --- seg 2
     dict(file='Monkeys Spinning Monkeys - Kevin MacLeod.m4a', src=1.0, ref_ss=4.0, at=44.75, until=T(66.0), fade_in=0.3, fade_out=0.25, level=-22),
     dict(file='Fluffing a Duck - Kevin MacLeod.mp3', src=0.0, at=T(66.0) - 0.05, until=m0 + 0.1, fade_in=0.05, fade_out=0.3, level=-20),
+    # --- seg 3
+    dict(file='轻松滑稽-Monkeybiz.mp3', src=1.0, ref_ss=4.0, at=79.45, until=T(83.72) - 0.35, fade_in=0.2, fade_out=0.12, level=-22),
+    dict(file='Mombasa - Hans Zimmer.m4a', src=13.0, ref_ss=14.0, at=T(83.72), until=T(96.96) - 0.1, fade_in=0.01, fade_out=0.08, level=-19),
+    dict(file='Heart of Courage - Two Steps From Hell.mp3', src=72.0, ref_ss=72.0, at=T(96.96) + 0.1, until=T(102.1), fade_in=0.3, fade_out=0.05, level=-18),
+    dict(file='Monkeys Spinning Monkeys - Kevin MacLeod.m4a', src=1.0, ref_ss=4.0, at=T(104.3), until=T(140.0), fade_in=0.3, fade_out=0.3, level=-22),
 ]
 sfx = [dict(file='重音-咚 重磅.mp3', at=1.05, gain_db=-16, align='peak'), dict(file=WH, at=3.9, gain_db=-24, align='peak')]
 sfx += [dict(file=WH, at=t, gain_db=-26, align='peak') for t in (7.5, 11.0, 14.45, 21.12, 24.95, 38.5)]
@@ -34,8 +39,12 @@ for e in ev['sfx']:
     k = e['kind']; t = e['at']
     if t < 44.6: continue
     if k == 'whoosh': sfx.append(dict(file=WH, at=t, gain_db=-26, align='peak'))
+    elif k == 'hit': sfx.append(dict(file='重音-Gate Hit.mp3', at=t, gain_db=-18, align='peak'))
+    elif k == 'thud': sfx.append(dict(file='重音-Thud Hit C.mp3', at=t, gain_db=-17, align='peak'))
+    elif k == 'boom': sfx.append(dict(file='重音-咚 重磅.mp3', at=t, gain_db=-16, align='peak'))
     else: synth.append(dict(kind=k, at=t))
-swell = [[1.05, 3.9, 1.0], [42.75, 44.6, 1.0]]
+swell = [[1.05, 3.9, 1.0], [42.75, 44.6, 1.0], [T(83.72), T(83.72) + 1.0, 1.0], [T(100.14), T(102.1), 0.75]]
+b0 = T(83.72); sfx += [dict(file='上升-whoosh rise.mp3', at=b0, gain_db=-22, align='end'), dict(file='重音-Thud Hit C.mp3', at=b0, gain_db=-15, align='peak'), dict(file='重音-咚 重磅.mp3', at=b0, gain_db=-17, align='peak')]
 json.dump(dict(end=END, duck_db=-11, voice=voice, music=[m for m in music if m['at'] < END], sfx=[s for s in sfx if s['at'] < END],
                synth=[s for s in synth if s['at'] < END], swell=swell), open('/tmp/claude-0/mock/cues_all.json', 'w'), ensure_ascii=False, indent=1)
 print('ok', END)
