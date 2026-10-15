@@ -29,22 +29,33 @@
 | `kx.py` / `v3.py` / `v4.py` | 包装库：背景、半透明卡片和徽章、金属字 / 毛笔字、透视截图、甩镜、字幕 |
 | `export.py` | 导出字幕 SRT、三条分轨（人声 / 配乐 / 音效）、时间线 cue 表 |
 
-## 三、渲染
+## 三、在本地渲染（Mac）
 
 ```sh
+# 1. 装工具（只需一次）
+brew install ffmpeg git-lfs python
+git lfs install
+python3 -m pip install numpy opencv-python pillow matplotlib
+
+# 2. 拉工程（视频素材在 Git LFS 里，必须 git lfs pull）
+git clone -b xunfei-ai4s-edit https://github.com/AndroidOne-io/tihuceshi-work.git
+cd tihuceshi-work && git lfs pull
+
+# 3. 先试渲染 2 秒，确认环境没问题
 cd 科大讯飞/代码
-# 画面：两个进程各渲半条（机器内存小时不要再同时跑第三个进程）
-python3 full.py align.json 输出A video 0 130 &
-python3 full.py align.json 输出B video 130 258.5 &
-# 声音：整条混音 → -14 LUFS
-python3 full.py align.json 输出C audio 0 258.5
-# 拼接：两段画面按帧号相接（第 3900 帧切开），再和声音合成
-printf "file '输出A/win_video.mp4'\nfile '输出B/win_video.mp4'\n" > list.txt
-ffmpeg -f concat -safe 0 -i list.txt -i 输出C/full_audio.wav -map 0:v -map 1:a -c:v copy -c:a aac -b:a 256k 成片.mp4
+python3 render_all.py 4 45 47          # → 科大讯飞/成片输出/试渲染_45-47.mp4
+
+# 4. 渲染整条
+python3 render_all.py 4                # → 科大讯飞/成片输出/成片.mp4
+
+# 5.（可选）导出字幕、分轨、cue 表
+python3 export.py align.json ../成片输出
 ```
 
-其他模式：`stills`（关键帧截图）、`check 起秒 止秒`（声画对位图 `sync.png` + 配乐电平报告）。
-依赖：Python 3 + numpy + opencv + Pillow + ffmpeg。
+`render_all.py` 的第一个数字是并行进程数，每个进程约占 2.5 GB 内存：16 GB 内存用 4，32 GB 可以用 6–8。
+画面按帧号切成几段并行渲染，再无损拼接，接缝处不丢帧、不重帧；最后会打印成片总帧数，应和「应为」一致。
+
+单独调试：`python3 full.py align.json 输出目录 stills`（关键帧截图）、`check 起秒 止秒`（声画对位图 + 配乐电平）。
 
 ## 四、常改的地方
 
