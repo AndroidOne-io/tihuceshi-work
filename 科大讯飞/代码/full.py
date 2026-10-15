@@ -363,7 +363,7 @@ def build_audio():
     hostm = np.convolve(hostm, np.ones(int(0.3 * SR)) / int(0.3 * SR), 'same').astype(np.float32)
     music = np.zeros((N, 2), np.float32)
     for m in MUSIC:
-        tr = load(MUSD + m['file']); r0 = m.get('ref', m['src']); m_db = db(tr[int(r0 * SR):int((r0 + 20) * SR)])   # 响度参考段
+        tr = load(m['file'] if m['file'].startswith('/') else MUSD + m['file']); r0 = m.get('ref', m['src']); m_db = db(tr[int(r0 * SR):int((r0 + 20) * SR)])   # 响度参考段
         o0 = PRE + m['frm']; s0 = m['src'] - (m['at'] - m['frm']); n = int((m['to'] - m['frm']) * SR)
         x = tr[int(s0 * SR):int(s0 * SR) + n].copy(); i0 = int(o0 * SR)
         fi, fo = int(m['fin'] * SR), int(m['fout'] * SR); x[:fi] *= np.linspace(0, 1, fi)[:, None]; x[-fo:] *= np.linspace(1, 0, fo)[:, None]

@@ -8,27 +8,33 @@
 
 HOST_SHOTS = {6, 9, 12, 14, 16, 18, 25, 35, 49, 50, 61, 62, 65, 71}
 
+NEW = os.path.join(REPO, '音乐素材') + '/'          # 你新找的曲子（tihuceshi-work/音乐素材）
+
 def M(file, src, at, frm, to, fin=0.6, fout=1.2, dip=None, ref=None, gap=-4, under=-16, host=-30):
-    return dict(file='音乐/' + file, src=src, at=at, frm=frm, to=to, fin=fin, fout=fout, dip=dip, ref=src if ref is None else ref, gap=gap, under=under, host=host)
+    return dict(file=file if file.startswith('/') else '音乐/' + file, src=src, at=at, frm=frm, to=to, fin=fin, fout=fout, dip=dip,
+                ref=src if ref is None else ref, gap=gap, under=under, host=host)
 
 MUSIC = [
-    # 1 冷开（黑场蓄力 → 「攻克」炸开）：悬疑铺垫，炸开后在停顿里余响
+    # 1 冷开（黑场蓄力 → 「攻克」炸开）：悬疑铺垫，炸开后在停顿里余响                         —— 旧库 Dance for me walls
     M('悬疑-Dance for me walls.mp3', 21.09, EV['boom'], EV['boom'] - 2.5, EV['cut2'] + 0.6, fin=0.4, fout=1.4, dip=EV['boom'], ref=21.0, gap=-3),
-    # 2 OpenAI Math 新闻 → 知识向内/向外：Oppenheimer 的琶音，一路往上推；整曲的「戛然而止」对准「参与创造知识」
-    M('Can You Hear The Music - Ludwig Göransson.mp3', 101.40, EV['create'] - 0.22, EV['cut2'] - 0.3, EV['create'] + 0.3, fin=1.5, fout=0.5, ref=70.0, under=-17, host=-30),
-    # 3 「AI干的就是明珠」表情包：滑稽小段落，包袱抖完就收
+    # 2 A 讲解背景：OpenAI Math 新闻 → 知识向内/向外。跳过曲子开头太轻的 8 秒，后面慢慢起来；「参与创造知识」前整段断掉
+    M(NEW + '53976329-tech-explainer-background-modern-digital-459114.mp3', 8.0, EV['cut2'] - 0.3, EV['cut2'] - 0.3, EV['create'] - 0.02,
+      fin=0.8, fout=0.25, ref=30.0, gap=-5, under=-16),
+    # 3 包袱「AI干的就是明珠」：滑稽小段，抖完就收                                              —— 旧库 Fluffing a Duck
     M('Fluffing a Duck - Kevin MacLeod.mp3', 0.0, EV['meme'], EV['meme'], S[16]['start'] + 1.2, fin=0.02, fout=1.2, ref=0.0, gap=-6, under=-12, host=-28),
-    # 4 片名 AI for Science：史诗爆点对准片名，停顿里推满，转回国内时退下
-    M('Breath and Life - Audiomachine.mp3', 16.25, EV['afs'], EV['afs'] - 4.0, EV['bridge'] + 0.4, fin=1.5, fout=1.6, ref=17.0, gap=-3, under=-16, host=-30),
-    # 5 国内科研 → 化工研发 → 死亡之谷：稀疏钢琴氛围，讲痛点；曲线栽下去那一刻整段断掉
-    M('Hand Covers Bruise - Trent Reznor & Atticus Ross.mp3', 17.0, EV['bridge'], EV['bridge'] - 0.2, EV['fall'] - 0.02, fin=0.8, fout=0.1, ref=25.0, gap=-6, under=-15, host=-29),
-    # 6 讯飞 3.0 Pro → 演示 → 400+：转向「解决方案」，大气推进；本段自然收尾落在「02 生物医药」之前
-    M('大气史诗-宣传.mp3', 194.5, EV['ch2_in'] - 1.0, EV['cut37'] - 0.05, EV['ch2_in'] - 0.2, fin=0.2, fout=0.4, dip=[EV['n400']], ref=150.0, under=-18, host=-30),
-    # 7 「02 生物医药」→ 发表：同一首的新段落起在章节卡上
-    M('大气史诗-宣传.mp3', 207.0, EV['ch2_in'], EV['ch2_in'] - 0.05, EV['cut61'] + 0.2, fin=0.1, fout=1.2, ref=210.0, under=-18, host=-30),
-    # 8 品牌句 → 总结 → 1024 → 结尾：Hans Zimmer「Time」，高潮铺在 1024 / 真实场景 / 五个场景，
-    #   回落的钢琴尾声对准最后一句真人口播，片尾随画面渐黑
-    M('Time - Hans Zimmer.mp3', 213.3, EV['cut71'], EV['cut61'] - 0.2, TOTAL + TAIL, fin=1.6, fout=2.5, dip=[EV['real']], ref=185.0, gap=-4, under=-17, host=-27),
+    # 4 片名 AI for Science：史诗爆点对准片名，停顿里推满，转回国内时退下                         —— 旧库 Breath and Life
+    M('Breath and Life - Audiomachine.mp3', 16.25, EV['afs'], EV['afs'] - 4.0, EV['bridge'] + 0.4, fin=1.5, fout=1.6, ref=17.0, gap=-3, under=-16),
+    # 5 B 痛点悬念：国内科研 → 化工 → 死亡之谷。低频脉冲、几乎不占人声频段；曲线栽下去那一刻断掉
+    M(NEW + 'leberch-documentary-suspense-375268.mp3', 0.0, EV['bridge'] - 0.2, EV['bridge'] - 0.2, EV['fall'] - 0.02, fin=0.8, fout=0.1, ref=5.0, gap=-5, under=-18),   # 脉冲感强，压低一点
+    # 6 C1 解决方案：讯飞 3.0 Pro → 演示 → 400+。合作徽章下是安静前奏，曲子「起来」的那一下对准 3.0 Pro 截图出现
+    M(NEW + 'sergepavkinmusic-futuristic-view-198436.mp3', 16.8, EV['cut38'], EV['cut37'] - 0.05, EV['ch2_in'] - 0.15, fin=0.3, fout=1.0,
+      dip=[EV['n400']], ref=30.0, under=-18),
+    # 7 C2 生物医药：换一首，开头的重拍对准「02 生物医药」章节卡
+    M(NEW + 'the_mountain-inspiring-technology-179473.mp3', 1.9, EV['ch2_in'], EV['ch2_in'] - 0.4, EV['cut61'] + 0.2, fin=0.3, fout=1.0, ref=10.0, under=-18),
+    # 8 D 温暖结尾：品牌句 → 总结 → 1024 → 结尾。曲中的安静段落在「AI 还不能替代科学家」，
+    #   高潮起在 1024 活动页，回落对准最后一句真人口播，片尾渐黑
+    M(NEW + 'echoes_of_lumen-hope-music-hopeful-piano-586991.mp3', 139.5, EV['cut71'], EV['cut61'] - 0.2, TOTAL + TAIL, fin=1.2, fout=2.5,
+      dip=[EV['real']], ref=80.0, gap=-4, under=-17, host=-28),
 ]
 
 SFX = {'rise': '上升-whoosh rise.mp3', 'whoosh': '转场-Whoosh.mp3', 'swish': '转场-Windy swish.mp3', 'gate': '重音-Gate Hit.mp3',
