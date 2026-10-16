@@ -223,6 +223,78 @@ const E = (() => {
     }
     ctx.restore();
   }
+  // 半透明曲线不能用外扩三角网格：重叠会加深透明度，粗网格会折断曲线。
+  // 整张纹理用同一个投影矩阵采样，供第 5 镜的透明徽章桌面使用。
+  let exactWarp;
+  function makeExactWarp() {
+    const canvas = document.createElement('canvas'); canvas.width = W; canvas.height = H;
+    const gl = canvas.getContext('webgl', { alpha: true, premultipliedAlpha: true, preserveDrawingBuffer: true });
+    if (!gl) return null;
+    const shader = (type, code) => {
+      const s = gl.createShader(type); gl.shaderSource(s, code); gl.compileShader(s);
+      if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s));
+      return s;
+    };
+    const p = gl.createProgram();
+    gl.attachShader(p, shader(gl.VERTEX_SHADER, `
+      attribute vec2 uv; uniform mat3 projection; uniform vec2 sourceSize;
+      varying vec2 texCoord;
+      void main() {
+        vec3 q = projection * vec3(uv * sourceSize, 1.0);
+        gl_Position = vec4(2.0*q.x/1920.0-q.z, q.z-2.0*q.y/1080.0, 0.0, q.z);
+        texCoord = uv;
+      }`));
+    gl.attachShader(p, shader(gl.FRAGMENT_SHADER, `
+      precision highp float; uniform sampler2D source; varying vec2 texCoord;
+      void main() { gl_FragColor = texture2D(source, texCoord); }`));
+    gl.linkProgram(p);
+    if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(p));
+    gl.useProgram(p);
+    gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([0,0, 1,0, 0,1, 1,1]), gl.STATIC_DRAW);
+    const uv = gl.getAttribLocation(p, 'uv'); gl.enableVertexAttribArray(uv); gl.vertexAttribPointer(uv, 2, gl.FLOAT, false, 0, 0);
+    gl.bindTexture(gl.TEXTURE_2D, gl.createTexture());
+    for (const param of [gl.TEXTURE_WRAP_S, gl.TEXTURE_WRAP_T]) gl.texParameteri(gl.TEXTURE_2D, param, gl.CLAMP_TO_EDGE);
+    for (const param of [gl.TEXTURE_MIN_FILTER, gl.TEXTURE_MAG_FILTER]) gl.texParameteri(gl.TEXTURE_2D, param, gl.LINEAR);
+    gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
+    gl.uniform1i(gl.getUniformLocation(p, 'source'), 0);
+    return { canvas, gl, projection: gl.getUniformLocation(p, 'projection'), sourceSize: gl.getUniformLocation(p, 'sourceSize') };
+  }
+  function perspExact(ctx, src, w, h, cx, cy, o = {}) {
+    const q = projQuad(w, h, cx, cy, o.scale ?? 1, o.ry ?? 0, o.rx ?? 0, o.rz ?? 0, o.f ?? 2200);
+    const rect = [[0,0], [w,0], [w,h], [0,h]], M = solveH(rect, q);
+    if (exactWarp === undefined) {
+      try { exactWarp = makeExactWarp(); } catch (e) { console.warn('透视纹理改用逐像素采样', e); exactWarp = null; }
+    }
+    if (exactWarp && !exactWarp.gl.isContextLost()) {
+      const { canvas, gl, projection, sourceSize } = exactWarp;
+      gl.viewport(0, 0, W, H); gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT);
+      gl.uniformMatrix3fv(projection, false, new Float32Array([M[0],M[3],M[6], M[1],M[4],M[7], M[2],M[5],M[8]]));
+      gl.uniform2f(sourceSize, w, h);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, src);
+      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+      ctx.drawImage(canvas, 0, 0); return M;
+    }
+    // 无 WebGL 时仍保持相同几何：逆投影 + 预乘透明度双线性采样，不退回有拼缝的网格。
+    const c = tmp('exactWarpCPU'), g = c.getContext('2d'), out = g.createImageData(W, H);
+    const sw = src.width, sh = src.height, input = src.getContext('2d').getImageData(0, 0, sw, sh).data;
+    const inv = solveH(q, rect), dst = out.data;
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+      const den = inv[6]*(x+0.5) + inv[7]*(y+0.5) + inv[8];
+      const sx = (inv[0]*(x+0.5) + inv[1]*(y+0.5) + inv[2])/den * sw/w - 0.5;
+      const sy = (inv[3]*(x+0.5) + inv[4]*(y+0.5) + inv[5])/den * sh/h - 0.5;
+      if (sx < 0 || sy < 0 || sx >= sw-1 || sy >= sh-1) continue;
+      const ix = Math.floor(sx), iy = Math.floor(sy), fx = sx-ix, fy = sy-iy, pos = (iy*sw+ix)*4;
+      let a = 0, r = 0, b = 0, green = 0;
+      for (let j = 0; j < 2; j++) for (let i = 0; i < 2; i++) {
+        const p = pos+(j*sw+i)*4, weight = (i ? fx : 1-fx)*(j ? fy : 1-fy)*input[p+3];
+        a += weight; r += weight*input[p]; green += weight*input[p+1]; b += weight*input[p+2];
+      }
+      const p = (y*W+x)*4;
+      if (a > 0) { dst[p] = r/a; dst[p+1] = green/a; dst[p+2] = b/a; dst[p+3] = a; }
+    }
+    g.putImageData(out, 0, 0); ctx.drawImage(c, 0, 0); return M;
+  }
   function tri(ctx, src, crop, w, h, s, d) {      // 卡片坐标三角形 s → 屏幕三角形 d 的仿射；源 crop 铺满 0..w × 0..h
     const [u0, v0, u1, v1, u2, v2] = s; const [[x0, y0], [x1, y1], [x2, y2]] = d;
     const det = (u1 - u0) * (v2 - v0) - (u2 - u0) * (v1 - v0); if (Math.abs(det) < 1e-9) return;
@@ -328,6 +400,6 @@ const E = (() => {
 
   return { W, H, clamp, seg, lerp, ease, easeOut, easeIn, backOut, rgb, rng, IMG, img, loadImages, tmp, setVideoSources, video, syncVideos, videosSettled, allVideos, probeVideos, busy,
     ready, sizeOf, put, cover, fill, flash, grade, zoomBegin, zoomEnd, whip, shake, glitch, solveH, mapPt, projQuad, roundedOutline, pathPoly, drawWarped,
-    persp, dimExcept, quadOf, bboxOf, hlBar, subtitle, number, sweep, glowBegin, glowEnd, dot, ring, line, layer, blurred, addLayer, blurDraw,
+    persp, perspExact, dimExcept, quadOf, bboxOf, hlBar, subtitle, number, sweep, glowBegin, glowEnd, dot, ring, line, layer, blurred, addLayer, blurDraw,
     setMode: m => { MODE = m; }, getMode: () => MODE };
 })();

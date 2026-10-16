@@ -133,7 +133,7 @@ function v5(ctx, t) {
   });
   bg(ctx, 'BG');
   const z = lerp(1.0, 1.08, ease(Math.min(1, tl / S[5].dur)));
-  E.persp(ctx, c, cw, chh, W / 2, H * 0.55, { scale: z * 0.92, ry: -4, rx: 34, f: 1800, shadowK: 0, radius: 0, n: 8 });
+  E.perspExact(ctx, c, cw, chh, W / 2, H * 0.55, { scale: z * 0.92, ry: -4, rx: 34, f: 1800 });
 }
 VIS[5] = v5;
 

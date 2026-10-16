@@ -12,7 +12,7 @@ ALIGN = sys.argv[1] if len(sys.argv) > 1 else 'align.json'
 VO_WAV = os.path.join(MAT, '口播', '非出镜美化.wav')
 SUB_FIX = {'科研院所': '研究院所', '蛋白质设计项目': '蛋白质实验项目', '还没找到': '还没有找到', '科学家做什么？': '科学家做什么呢？'}   # 按实际念的出字幕
 ROW_GAP, LEAD, TAIL = 0.15, 0.10, 0.32           # 行间空隙 0.30 → 0.15（客户反馈：留白短一点）
-SPEED = globals().get('SPEED', {'vo': 1.0, 'cam': 1.08, 'r20': 1.08})   # 真人出镜、声音克隆提速 8%，和画外音语速拉平（音调不变，出镜画面同步）
+SPEED = globals().get('SPEED', {'vo': 1.0, 'cam': 1.08, 'cam_slow': 0.9, 'r20': 1.0})   # 真人默认 1.08；指定研究问题句 0.9；新补录保持原速（均保音高）
 
 def nchars(s): return [m.group(0) for m in re.finditer(r'[一-鿿]|[A-Za-z]+|\d+(?:\.\d+)?', s)]
 
@@ -46,6 +46,13 @@ t = 0.0
 for r in rows:
     rs = [(i, x) for i, x in SHOTS if x[0] == r]
     said = [(c, tk['src'], ct, n) for n, tk in enumerate(row_takes[r]) for c, _, _, ct in tk['chars']]
+    # 第 8 镜只放慢“这里面不乏人类尚未解决的研究问题”，前半句保持原速。
+    if r == 4:
+        phrase = nchars('这里面不乏人类尚未解决的研究问题')
+        words = [c.lower() for c, _, _, _ in said]
+        first = next(j for j in range(len(words)) if words[j:j + len(phrase)] == phrase)
+        said = [(c, 'cam_slow' if first <= j < first + len(phrase) else src, ct, n)
+                for j, (c, src, ct, n) in enumerate(said)]
     script, owner = [], []
     for j, (i, x) in enumerate(rs):
         cs = nchars(x[1]); script += cs; owner += [j] * len(cs)
@@ -64,8 +71,8 @@ for r in rows:
         if x[8]: cuts[mp[first_of[j + 1]]] = x[8]
     pieces, p0 = [], 0
     for m in range(1, len(said) + 1):
-        if m == len(said) or said[m][3] != said[m - 1][3] or m in cuts:
-            pieces.append((p0, m, cuts.get(m, 0.08 if m < len(said) else 0))); p0 = m
+        if m == len(said) or said[m][3] != said[m - 1][3] or said[m][1] != said[m - 1][1] or m in cuts:
+            pieces.append((p0, m, cuts.get(m, 0.08 if m < len(said) and said[m][3] != said[m - 1][3] else 0))); p0 = m
     out_t = [0.0] * len(said)
     row0 = t
     previous_end = None
@@ -90,6 +97,8 @@ for r in rows:
         tk = row_takes[r][said[b - 1][3]]
         if tk['src'] == 'vo' and tk['a'] == 8.95:
             a1 = min(a1, 12.75)
+        if tk['src'] == 'r20':
+            a0, a1 = tk['a'], tk['b']  # 新补录整段使用，保留全部词头词尾
         previous_end = a1
         audio_pieces.append((a0, a1, t, said[a][1]))
         k = SPEED[said[a][1]]
@@ -112,7 +121,7 @@ def src_at(t, src='cam'):
     """输出时间 → 源素材时间（落在空隙里就取最近的一端）"""
     best = None
     for a0, a1, o, sr in audio_pieces:
-        if sr != src: continue
+        if sr != src and not (src == 'cam' and sr == 'cam_slow'): continue
         k = SPEED[sr]; L = (a1 - a0) / k
         if o <= t <= o + L: return a0 + (t - o) * k
         d = min(abs(t - o), abs(t - o - L))

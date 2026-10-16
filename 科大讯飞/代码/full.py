@@ -366,9 +366,11 @@ def build_audio():
         subprocess.run(['ffmpeg', '-v', 'error', '-y', '-i', p, '-vn', '-ac', '2', '-ar', str(SR), '-af', f'atempo={k}', f'{OUT}/_t.wav'], check=True)
         with wave.open(f'{OUT}/_t.wav') as w: return np.frombuffer(w.readframes(w.getnframes()), np.int16).reshape(-1, 2).astype(np.float32) / 32768
     RAW = {'vo': load_k(VO_WAV, SPEED['vo']), 'cam': load_k(os.path.join(MAT, '口播', '1080-压缩版.mp4'), SPEED['cam']),
-           'r20': load_k(os.path.join(MAT, '口播', '科大讯飞1024结尾-声音克隆.mp3'), SPEED['r20'])}
+           'cam_slow': load_k(os.path.join(MAT, '口播', '1080-压缩版.mp4'), SPEED['cam_slow']),
+           'r20': load_k(os.path.join(MAT, '口播', '科大讯飞-补录口播.wav'), SPEED['r20'])}
     def rms_src(src): return np.sqrt(np.mean(np.concatenate([RAW[src][int(a / SPEED[sr] * SR):int(b / SPEED[sr] * SR)] for a, b, o, sr in audio_pieces if sr == src]) ** 2))
     GN = {k: rms_src('vo') / rms_src(k) for k in ('vo', 'cam', 'r20')}       # 三种录音响度对齐
+    GN['cam_slow'] = GN['cam']  # 局部降速沿用原真人音量，不另改响度
     N = int((DUR + 0.5) * SR); voice = np.zeros((N, 2), np.float32)
     for piece_index, (a0, a1, o, sr) in enumerate(audio_pieces):
         k = SPEED[sr]; x = RAW[sr][int(a0 / k * SR):int(a1 / k * SR)] * GN[sr]; i = int((o + PRE) * SR); n = min(len(x), N - i)

@@ -30,7 +30,7 @@ if WHAT in ('all', 'data'):
         shots=[dict(i=s['i'], row=s['row'], start=s['start'], end=s['end'], chars=[c[1] for c in s['chars']], text=s['text']) for s in shots],
         EV=EV, subs=[[a, txt, i, b] for a, txt, i, b in SUBS], NO_SUB=sorted(NO_SUB), CUTS=CUTS, QUIET=sorted(QUIET),
         HOST_SHOTS=sorted(HOST_SHOTS), SPEED=SPEED,
-        cam=[[a0, a1, o, SPEED[sr]] for a0, a1, o, sr in audio_pieces if sr == 'cam'],
+        cam=[[a0, a1, o, SPEED[sr]] for a0, a1, o, sr in audio_pieces if sr in ('cam', 'cam_slow')],
         BADGE_T=BADGE_T, FIELDS=[[x, y] for n, c, sz, ts, x, y, w in FIELDS],
         DROPS=DROPS, PX=PX, PY=PY, SPARK=SPARK, KC=KC, KR=KR, KN=KN, GRID=GRID, STARS=STARS, DUST=DUST, PART=PART,
         PFLOW=PFLOW, SP37=SP37, MODS=MODS, ST_X=ST_X, ST_Y=ST_Y, ST_T=ST_T,
