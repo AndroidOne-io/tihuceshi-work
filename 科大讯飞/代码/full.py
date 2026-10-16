@@ -314,10 +314,21 @@ A_OUT, B_OUT = WIN if WIN else (0.0, DUR)
 # ================================================================ 声音
 SR = 44100
 MUSD = os.path.join(REPO, '音乐素材', '旧库') + '/'      # 旧库里用到的曲子和 7 个音效（原在 aliang2052/Tempsucai）
-def load(p):
-    subprocess.run(['ffmpeg', '-v', 'error', '-y', '-i', p, '-vn', '-ac', '2', '-ar', str(SR), f'{OUT}/_t.wav'], check=True)
-    with wave.open(f'{OUT}/_t.wav') as w: return np.frombuffer(w.readframes(w.getnframes()), np.int16).reshape(-1, 2).astype(np.float32) / 32768
-def peak_of(x): env = np.convolve(np.abs(x).mean(1), np.ones(441) / 441, 'same'); return env.argmax() / SR
+def load(p, af=None):
+    """读音频成 44.1k 立体声 float32；结果按 (文件, 修改时间, 滤镜) 缓存，改声音时不用每次重新解码"""
+    import hashlib
+    cd = os.path.join(OUT, '_acache'); os.makedirs(cd, exist_ok=True)
+    key = hashlib.md5(f'{p}|{os.path.getmtime(p)}|{af}|{SR}'.encode()).hexdigest(); cp = os.path.join(cd, key + '.npy')
+    if os.path.exists(cp): return np.load(cp)
+    subprocess.run(['ffmpeg', '-v', 'error', '-y', '-i', p, '-vn', '-ac', '2', '-ar', str(SR)] + (['-af', af] if af else []) + [f'{OUT}/_t.wav'], check=True)
+    with wave.open(f'{OUT}/_t.wav') as w: x = np.frombuffer(w.readframes(w.getnframes()), np.int16).reshape(-1, 2).astype(np.float32) / 32768
+    np.save(cp, x); return x
+def movavg(v, n):
+    """居中滑动平均（等价于 np.convolve(v, ones(n)/n, 'same')，用前缀和，O(N)）"""
+    n = max(1, int(n)); c = np.concatenate([[0.0], np.cumsum(v, dtype=np.float64)]); L = len(v)
+    i = np.arange(L); a = np.clip(i - n // 2, 0, L); b = np.clip(i - n // 2 + n, 0, L)
+    return ((c[b] - c[a]) / n).astype(np.float32)
+def peak_of(x): env = movavg(np.abs(x).mean(1), 441); return env.argmax() / SR
 def db(x): return 20 * np.log10(np.sqrt((x ** 2).mean()) + 1e-9)
 def lufs(x):
     """EBU R128 积分响度（ffmpeg ebur128），用来统一各段配乐和人声的听感响度"""
@@ -358,9 +369,7 @@ if os.path.exists(os.path.join(HERE, 'sound.py')): exec(open(os.path.join(HERE, 
 
 def build_audio():
     def load_k(p, k):                                  # 整条录音按 SPEED 变速（atempo 保持音调）；片段 [a0,a1] 对应变速后的 [a0/k, a1/k]
-        if abs(k - 1) < 1e-6: return load(p)
-        subprocess.run(['ffmpeg', '-v', 'error', '-y', '-i', p, '-vn', '-ac', '2', '-ar', str(SR), '-af', f'atempo={k}', f'{OUT}/_t.wav'], check=True)
-        with wave.open(f'{OUT}/_t.wav') as w: return np.frombuffer(w.readframes(w.getnframes()), np.int16).reshape(-1, 2).astype(np.float32) / 32768
+        return load(p) if abs(k - 1) < 1e-6 else load(p, f'atempo={k}')
     RAW = {'vo': load_k(VO_WAV, SPEED['vo']), 'cam': load_k(os.path.join(MAT, '口播', '1080-压缩版.mp4'), SPEED['cam']),
            'r20': load_k(os.path.join(MAT, '口播', '科大讯飞1024结尾-声音克隆.mp3'), SPEED['r20'])}
     def rms_src(src): return np.sqrt(np.mean(np.concatenate([RAW[src][int(a / SPEED[sr] * SR):int(b / SPEED[sr] * SR)] for a, b, o, sr in audio_pieces if sr == src]) ** 2))
@@ -371,15 +380,17 @@ def build_audio():
         fd = np.ones(n, np.float32); k = int(0.025 * SR); fd[:k] = np.linspace(0, 1, k); fd[-k:] = np.linspace(1, 0, k)
         voice[i:i + n] += x[:n] * fd[:, None]
     vmask = np.abs(voice).mean(1) > 0; v_db = db(voice[vmask]); v_lufs = lufs(voice)     # 配乐按听感响度（LUFS）对齐人声
-    act = np.convolve(np.abs(voice).mean(1), np.ones(int(0.05 * SR)) / int(0.05 * SR), 'same') > 10 ** ((v_db - 25) / 20)
-    env = np.zeros(N, np.float32); e = 0.0; up, dn = 1 / (0.15 * SR), 1 / (0.6 * SR); hold = int(0.45 * SR); last = -10 ** 9
-    for k in range(N):                               # 说话间换气（<0.45 秒）不抬音乐，避免一呼一吸地起伏
-        if act[k]: last = k
-        e = min(1.0, e + up) if k - last < hold else max(0.0, e - dn); env[k] = e
+    act = movavg(np.abs(voice).mean(1), 0.05 * SR) > 10 ** ((v_db - 25) / 20)
+    D_ = 44; act_c = act[:N // D_ * D_].reshape(-1, D_).any(1); M_ = len(act_c)   # 按 1 毫秒一步算包络（逐样本算太慢），再插值回采样率
+    env_c = np.zeros(M_, np.float32); e = 0.0; up, dn = D_ / (0.15 * SR), D_ / (0.6 * SR); hold = int(0.45 * SR / D_); last = -10 ** 9
+    for k in range(M_):                              # 说话间换气（<0.45 秒）不抬音乐，避免一呼一吸地起伏
+        if act_c[k]: last = k
+        e = min(1.0, e + up) if k - last < hold else max(0.0, e - dn); env_c[k] = e
+    env = np.interp(np.arange(N), np.arange(M_) * D_ + D_ / 2, env_c).astype(np.float32)
     hostm = np.zeros(N, np.float32)                     # 真人出镜时段（音乐再压低一档）
     for s_ in shots:
         if s_['i'] in globals().get('HOST_SHOTS', set()): hostm[int((PRE + s_['start']) * SR):int((PRE + s_['end']) * SR)] = 1.0
-    hostm = np.convolve(hostm, np.ones(int(0.6 * SR)) / int(0.6 * SR), 'same').astype(np.float32)
+    hostm = movavg(hostm, 0.6 * SR)
     music = np.zeros((N, 2), np.float32)
     for m in MUSIC:
         tr = load(m['file'] if m['file'].startswith('/') else MUSD + m['file'])

@@ -1,22 +1,47 @@
 #!/usr/bin/env python3
 # 网页版 → 成片 mp4（逐帧精确导出：每一帧都等视频跳到位再截，和网页里看到的一模一样）
 #
-#   python3 科大讯飞/网页版/tools/export_mp4.py                 # 整条，默认 4 个并行，出 科大讯飞/成片输出/网页版成片.mp4
-#   python3 科大讯飞/网页版/tools/export_mp4.py --jobs 6        # 并行数（每个占一个浏览器，内存 16G 的 Mac 建议 4–6）
+#   python3 科大讯飞/网页版/tools/export_mp4.py                 # 整条，出 科大讯飞/成片输出/网页版成片.mp4（并行数按 CPU 自动定）
+#   python3 科大讯飞/网页版/tools/export_mp4.py --jobs 6        # 手动指定并行数（每个占一个浏览器，约 1–1.5G 内存）
 #   python3 科大讯飞/网页版/tools/export_mp4.py --from 100 --to 130   # 只导一段试看（成片时间，秒）
 #   python3 科大讯飞/网页版/tools/export_mp4.py --small         # 另外压一个 < 30MB 的交付版
 #
 # 第一次用要装：pip3 install playwright ；本机装了 Google Chrome 就行（脚本用系统 Chrome，因为它能解 H.264）。
 # 没装 Chrome 的话：python3 -m playwright install chromium，并先跑 bash 科大讯飞/网页版/_proxy/make.sh 生成 webm 代理素材。
+#
+# 为什么快：① 4/10/11 号空镜原片每 5 秒才一个关键帧，逐帧精确跳转很慢；第一次导出时自动转一份每 0.2 秒一个关键帧的副本到 网页版/_export/
+#           （只在本地、不进 Git，素材没变就不重转）② 每帧只画两遍 ③ Mac 上视频用系统硬件编码（h264_videotoolbox），不和浏览器抢 CPU
 import sys, os, time, json, base64, argparse, subprocess, threading, http.server, urllib.parse, shutil
 
 HERE = os.path.dirname(os.path.abspath(__file__)); WEB = os.path.dirname(HERE); ROOT = os.path.abspath(os.path.join(WEB, '..', '..'))
 ap = argparse.ArgumentParser()
-ap.add_argument('--jobs', type=int, default=4); ap.add_argument('--fps', type=float, default=0)
+ap.add_argument('--jobs', type=int, default=max(1, min(6, (os.cpu_count() or 4) // 2))); ap.add_argument('--fps', type=float, default=0)
 ap.add_argument('--from', dest='a', type=float, default=0.0); ap.add_argument('--to', dest='b', type=float, default=-1)
 ap.add_argument('--out', default=''); ap.add_argument('--small', action='store_true'); ap.add_argument('--crf', type=int, default=18)
 ap.add_argument('--part', nargs=3, help=argparse.SUPPRESS)          # 内部用：--part 起始帧 结束帧 输出文件
 args = ap.parse_args()
+
+def encoders():
+    try: return subprocess.run(['ffmpeg', '-hide_banner', '-encoders'], capture_output=True, text=True).stdout
+    except Exception: return ''
+HW = 'h264_videotoolbox' in encoders()                  # Mac：系统硬件 H.264 编码
+def venc(q='master'):
+    if HW: return ['-c:v', 'h264_videotoolbox', '-b:v', '16M' if q == 'master' else '24M', '-pix_fmt', 'yuv420p']
+    return ['-c:v', 'libx264', '-preset', 'veryfast', '-crf', str(args.crf if q == 'master' else 14), '-pix_fmt', 'yuv420p']
+
+# 导出用的素材副本：关键帧密（每 0.2 秒一个），逐帧跳转快
+EXP = {'v4': '4.空镜.mp4', 'v10': '10.生物.mp4', 'v11': '11.化学.mp4'}
+def prepare_export_sources():
+    d = os.path.join(WEB, '_export'); os.makedirs(d, exist_ok=True); ok = True
+    for k, f in EXP.items():
+        src = os.path.join(WEB, '..', '素材', f); dst = os.path.join(d, k + '.mp4')
+        if not os.path.exists(src) or os.path.getsize(src) < 10000: ok = False; continue      # 没 git lfs pull
+        if os.path.exists(dst) and os.path.getmtime(dst) > os.path.getmtime(src): continue
+        print(f'  第一次导出：转一份好跳帧的 {f}（只转一次）…', flush=True); t = time.time()
+        subprocess.run(['ffmpeg', '-v', 'error', '-y', '-i', src, '-map', '0:v:0', '-an'] + venc('src') +
+                       ['-g', '6', '-bf', '0', '-force_key_frames', 'expr:gte(t,n_forced*0.2)', '-movflags', '+faststart', dst + '.part.mp4'], check=True)
+        os.replace(dst + '.part.mp4', dst); print(f'    好了（{time.time() - t:.0f} 秒）', flush=True)
+    return ok
 
 def read_D():
     s = open(os.path.join(WEB, 'data.js'), encoding='utf-8').read(); return json.loads(s[s.index('{'):s.rindex('}') + 1])
@@ -35,8 +60,9 @@ def render_part(f0, f1, out, fps):
         try: b = p.chromium.launch(channel='chrome', args=A)
         except Exception: b = p.chromium.launch(args=A)
         pg = b.new_page(viewport={'width': 1920, 'height': 1200})
-        pg.goto(base); pg.wait_for_function('window.READY === true', timeout=300000)
-        bad = pg.evaluate('E.probeVideos()')            # 这个浏览器能不能解原始 mp4（H.264）
+        exp_ok = all(os.path.exists(os.path.join(WEB, '_export', k + '.mp4')) for k in EXP)
+        pg.goto(base + ('?export' if exp_ok else '')); pg.wait_for_function('window.READY === true', timeout=300000)
+        bad = pg.evaluate('E.probeVideos()')            # 这个浏览器能不能解 mp4（H.264）
         if bad:
             if not has_proxy:
                 sys.exit(f'浏览器解不了这些视频：{bad}。请安装 Google Chrome（自带 H.264），或先跑 bash 科大讯飞/网页版/_proxy/make.sh 生成 webm 代理素材。')
@@ -45,7 +71,7 @@ def render_part(f0, f1, out, fps):
             bad = pg.evaluate('E.probeVideos()')
             if bad: sys.exit(f'webm 代理也读不了：{bad}')
         ff = subprocess.Popen(['ffmpeg', '-v', 'error', '-y', '-f', 'image2pipe', '-framerate', f'{fps}', '-c:v', 'mjpeg', '-i', '-',
-                               '-c:v', 'libx264', '-preset', 'medium', '-crf', str(args.crf), '-pix_fmt', 'yuv420p', '-r', f'{fps}', out], stdin=subprocess.PIPE)
+                               ] + venc() + ['-r', f'{fps}', out], stdin=subprocess.PIPE)
         t0 = time.time()
         for n in range(f0, f1):
             data = pg.evaluate(f"(async () => {{ await window.renderAt({n / fps}); return document.getElementById('c').toDataURL('image/jpeg', 0.95); }})()")
@@ -65,9 +91,10 @@ a = max(0.0, args.a); b = D['DUR'] if args.b < 0 else min(args.b, D['DUR'])
 f0, f1 = int(round(a * FPS)), int(round(b * FPS))
 OUTD = os.path.join(ROOT, '科大讯飞', '成片输出'); os.makedirs(OUTD, exist_ok=True)
 name = args.out or os.path.join(OUTD, '网页版成片.mp4' if (f0 == 0 and b >= D['DUR'] - 1e-6) else f'网页版试导_{a:g}-{b:g}.mp4')
+if not prepare_export_sources(): print('  （素材是 LFS 指针文件？先 git lfs pull）')
 tmp = os.path.join(OUTD, '_web_parts'); shutil.rmtree(tmp, ignore_errors=True); os.makedirs(tmp)
 J = max(1, min(args.jobs, (f1 - f0) // 30 or 1)); cuts = [f0 + (f1 - f0) * k // J for k in range(J + 1)]
-print(f'导出 {a:.2f}–{b:.2f} 秒，共 {f1 - f0} 帧，{J} 个并行')
+print(f'导出 {a:.2f}–{b:.2f} 秒，共 {f1 - f0} 帧，{J} 个并行，视频编码：{"系统硬件" if HW else "x264"}')
 t0 = time.time()
 procs = [subprocess.Popen([sys.executable, __file__, '--fps', str(FPS), '--crf', str(args.crf), '--part', str(cuts[k]), str(cuts[k + 1]), os.path.join(tmp, f'p{k:02d}.mp4')])
          for k in range(J)]
@@ -76,7 +103,8 @@ for k, p in enumerate(procs):
 lst = os.path.join(tmp, 'list.txt')
 open(lst, 'w', encoding='utf-8').write(''.join(f"file '{os.path.join(tmp, f'p{k:02d}.mp4')}'\n" for k in range(J)))
 subprocess.run(['ffmpeg', '-v', 'error', '-y', '-f', 'concat', '-safe', '0', '-i', lst, '-ss', f'{a}', '-t', f'{b - a}', '-i', os.path.join(WEB, 'mix.m4a'),
-                '-map', '0:v', '-map', '1:a', '-c:v', 'copy', '-c:a', 'aac', '-b:a', '256k', '-shortest', '-movflags', '+faststart', name], check=True)
+                '-map', '0:v', '-map', '1:a', '-c:v', 'copy'] + (['-c:a', 'copy'] if a == 0 else ['-c:a', 'aac', '-b:a', '256k']) +
+               ['-shortest', '-movflags', '+faststart', name], check=True)
 shutil.rmtree(tmp, ignore_errors=True)
 print(f'完成：{name}（用时 {(time.time() - t0) / 60:.1f} 分钟）')
 

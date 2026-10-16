@@ -48,7 +48,7 @@
   // 导出 / 截图：精确到帧（等视频跳到位再画）
   window.renderAt = async t => {
     E.setMode('seek'); playing = false; au.pause();
-    frame(ctx, t); E.syncVideos(); await E.videosSettled(); frame(ctx, t); E.syncVideos(); await E.videosSettled(); frame(ctx, t);
+    frame(ctx, t); E.syncVideos(); await E.videosSettled(); frame(ctx, t);   // 第一遍只为登记要用哪些视频的哪一刻；等全部跳到位后画最终一遍
     tCur = t; ui(); return true;
   };
   window.player = { seek, play, pause, get t() { return tCur; } };

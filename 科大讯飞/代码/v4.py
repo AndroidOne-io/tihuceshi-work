@@ -16,6 +16,7 @@ _cache = {}
 def bg_gild(backdrop=None, dim=0.18, leak=(0.12, 0.18), leak_col=AMBER, k_leak=0.10, key=None, bokeh=True):
     """暖黑底：中心微亮 + 一角暖色漏光 + 压暗去色的相关画面 + 大颗虚化光斑 + 胶片颗粒 + 暗角"""
     if key and key in _cache: return _cache[key].copy()
+    if LIGHT: return np.zeros((H, W, 3), np.float32)
     y, x = np.mgrid[0:H, 0:W].astype(np.float32)
     img = np.zeros((H, W, 3), np.float32); img[:] = OB0
     d = np.sqrt((x - W * 0.5) ** 2 + (y - H * 0.48) ** 2)

@@ -344,7 +344,7 @@ PAUSE_OVR = {1: 1.0, 8: 0.6, 11: 0.4, 13: 0.4, 15: 0.4, 17: 1.2, 18: 0.5, 25: 0.
 
 ### 7.4 母带
 
-人声 + 配乐 + 音效相加 → `ffmpeg loudnorm I=-14 TP=-1.5` → 整片 −14 LUFS。
+人声 + 配乐 + 音效相加 → 测整片 LUFS → 整体增益拉到 −14 LUFS + 峰值限幅（alimiter，−1.5 dB）。原来用 `loudnorm` 动态模式，单这一步要 20 秒；实测两种做法整片响度、动态范围一样（逐秒响度差中位 0.06 dB）。`export_web.py audio` 用这个；Python 的 `render_all.py` 仍是 loudnorm。
 
 ### 7.5 重新对齐口播（一般不需要）
 
@@ -364,6 +364,7 @@ PAUSE_OVR = {1: 1.0, 8: 0.6, 11: 0.4, 13: 0.4, 15: 0.4, 17: 1.2, 18: 0.5, 25: 0.
 | `python3 full.py align.json 目录 audio 起 止` | 整条混音 → `full_audio.wav`，并切出 `win_audio.wav` |
 | `python3 full.py align.json 目录 check 起 止` | 声画对位图 `sync.png`（灰=人声，黄=配乐，蓝=音效，红线=音效事件，绿虚线=切镜）+ 打印配乐电平 |
 | `python3 export.py align.json 目录` | 字幕.srt、分轨_人声/配乐/音效.wav、时间线_cue表.json |
+| `python3 export_web.py data audio` | **最常用**：改了停顿/节奏/声音后，时间线 + 音轨一起重导（一次启动；自动走轻量模式，不画大图，几十秒） |
 | `python3 export_web.py data` | 改了停顿/口播/事件后：重新导出网页版时间线 `网页版/data.js` |
 | `python3 export_web.py img` | 改了卡片/徽章/背景/截图等静态图后：重新导出 `网页版/assets/` 和 `assets.js` |
 | `python3 export_web.py audio` | 改了声音（配乐/音效/电平/停顿）后：重新混 `网页版/mix.m4a` |
@@ -523,7 +524,14 @@ python3 科大讯飞/网页版/tools/export_mp4.py --from 100 --to 130   # 只�
 python3 科大讯飞/网页版/tools/export_mp4.py --small         # 另压一个 < 30 MB 的交付版
 ```
 
-每一帧都先让所有视频跳到准确位置再截图，所以和预览里看到的一致、不掉帧。系统 Chrome 不可用时会退回 Playwright 自带的 Chromium（它不支持 H.264，需要先 `bash 科大讯飞/网页版/_proxy/make.sh` 生成 webm 代理素材）。
+每一帧都先让所有视频跳到准确位置再截图，所以和预览里看到的一致、不掉帧。
+
+提速做法（都在 `export_mp4.py` 里自动完成）：
+- 4/10/11 号空镜原片每 5 秒才一个关键帧，逐帧精确跳转要从关键帧往后解码最多 150 帧。第一次导出时自动转一份每 0.2 秒一个关键帧的副本到 `网页版/_export/`（不进 Git；素材没变就不重转），导出时页面用 `?export` 加载这些副本。
+- 每帧只画两遍（第一遍登记要用的视频时刻，等视频跳到位再画最终一遍）。
+- Mac 上视频用系统硬件编码 `h264_videotoolbox`，不和浏览器抢 CPU；其他系统用 x264 veryfast。
+- 并行数默认 = CPU 核数的一半（最多 6）。
+- 混音轨直接拷进成片，不再重编码。系统 Chrome 不可用时会退回 Playwright 自带的 Chromium（它不支持 H.264，需要先 `bash 科大讯飞/网页版/_proxy/make.sh` 生成 webm 代理素材）。
 
 ### 14.4 文件
 
@@ -551,7 +559,7 @@ python3 科大讯飞/网页版/tools/export_mp4.py --small         # 另压一�
 
 | 改什么 | 改哪里 | 然后 |
 | --- | --- | --- |
-| 停顿、语速、台词、字幕 | `代码/full.py` `PAUSE_OVR` / `timeline.py` / `shots.py` | `python3 export_web.py data` + `python3 export_web.py audio` |
+| 停顿、语速、台词、字幕 | `代码/full.py` `PAUSE_OVR` / `timeline.py` / `shots.py` | `python3 export_web.py data audio` |
 | 配乐、音效、电平 | `代码/sound.py` | `python3 export_web.py audio` |
 | 卡片/徽章/大字/背景的样子 | `代码/seg*_vis.py` / `v4.py` / `kx.py` | `python3 export_web.py img` |
 | 动画（位置、时机、运动） | `网页版/s*.js`（并同步 Python 版） | 刷新网页即可 |
@@ -559,7 +567,8 @@ python3 科大讯飞/网页版/tools/export_mp4.py --small         # 另压一�
 
 - **时间**：网页里 `t` 是时间线时间（同 Python），`frame(ctx, tOut)` 的 `tOut = t + PRE`；`EV`、`S[i].start`、`S[i].chars[k]`（第 k 个字的时刻）都和 Python 一样。
 - **画面函数必须只依赖 t**（纯函数），不能依赖上一帧——播放、拖动、并行导出都会从任意时刻开始画。缓存可以有（如工具墙的已亮格子），但结果必须和从头画一样。
-- **内存**：export_web.py 会执行一遍 full.py，约 2–3 GB；不要同时跑两个以上重的 Python 进程。
+- **内存**：export_web.py 会执行一遍 full.py；导 img 时约 2–3 GB，只导 data/audio 时走轻量模式（环境变量 `KX_LIGHT=1`：`Vid.get` 返回同尺寸空白帧、`bg_gild` 返回空白背景）。不要同时跑两个以上重的 Python 进程。
+- **混音缓存**：读进来的音频（包括变速后的口播）缓存在 `网页版/_tmp/_acache/`，换了录音文件会自动重算（按文件修改时间）。
 
 ### 14.6 坑
 

@@ -117,11 +117,13 @@ def grab(p, t):
     cap = cv2.VideoCapture(p); cap.set(cv2.CAP_PROP_POS_MSEC, t * 1000); ok, f = cap.read(); cap.release()
     return cv2.cvtColor(f, cv2.COLOR_BGR2RGB) if ok else None
 
+LIGHT = os.environ.get('KX_LIGHT') == '1'      # 轻量模式（export_web.py data/audio 用）：不读视频帧、不画背景，只为算时间线和混音
 class Vid:
     """顺序读视频帧（按秒取，自动缓存当前帧）"""
     def __init__(self, p):
         self.p = p; self.cap = cv2.VideoCapture(p); self.fps = self.cap.get(cv2.CAP_PROP_FPS) or 30; self.i = -1; self.f = None
     def get(self, t):
+        if LIGHT: return np.zeros((int(self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT)) or H, int(self.cap.get(cv2.CAP_PROP_FRAME_WIDTH)) or W, 3), np.uint8)
         n = int(round(t * self.fps))
         if n < self.i or n > self.i + 90:
             self.cap.set(cv2.CAP_PROP_POS_FRAMES, n); self.i = n - 1

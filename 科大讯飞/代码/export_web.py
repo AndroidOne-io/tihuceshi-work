@@ -2,11 +2,15 @@
 #   python3 export_web.py            # 全部（时间线 + 图片 + 音轨）
 #   python3 export_web.py data       # 只导时间线和参数（改了停顿/口播/事件后跑这个，再跑一次 audio）
 #   python3 export_web.py audio      # 只重混音轨
+#   python3 export_web.py data audio # 改了停顿/节奏：时间线 + 音轨一起（一次启动，最常用）
+#   只导 data / audio 时自动走轻量模式（不读视频帧、不画背景大图），几十秒就好；要导 img 时才完整加载。
 # 画面本身在网页里实时画（网页版/scenes.js），这里只导出它需要的数据和重效果图片。
 import sys, os, json, subprocess
 HERE_ = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE_); os.chdir(HERE_)
-WHAT = sys.argv[1] if len(sys.argv) > 1 else 'all'
+WHAT = set(sys.argv[1:]) or {'all'}
+want = lambda k: 'all' in WHAT or k in WHAT
+if not want('img'): os.environ['KX_LIGHT'] = '1'          # 只算时间线 / 混音：轻量模式
 WEB = os.path.join(HERE_, '..', '网页版'); AS = os.path.join(WEB, 'assets'); os.makedirs(AS, exist_ok=True)
 TMP = os.path.join(WEB, '_tmp'); os.makedirs(TMP, exist_ok=True)
 sys.argv = ['full.py', 'align.json', TMP, 'none']
@@ -23,7 +27,7 @@ def r3(x):
     return x
 
 # ---------------------------------------------------------------- 1. 时间线与参数
-if WHAT in ('all', 'data'):
+if want('data'):
     import hook as _hook, kongjing as _kj
     D = dict(
         W=W, H=H, FPS=FPS, PRE=PRE, TOTAL=TOTAL, TAIL=TAIL, DUR=DUR,
@@ -57,7 +61,7 @@ def save(name, v, jpg=False, q=88):
     if jpg: im.convert('RGB').save(p, quality=q)
     else: im.save(p, optimize=True)
 
-if WHAT in ('all', 'img'):
+if want('img'):
     G = globals()
     single = ['B_AI', 'B_AI_G', 'B_FAC', 'B_HG', 'B_LAB', 'B_RH', 'CH', 'CH2', 'C_DOC', 'C_LST', 'FAC_TAG', 'GHOST', 'LAB_TAG', 'LBL', 'LOCK',
               'MEME_CARD', 'N400', 'NEQ', 'NEQ_A', 'NEQ_B', 'PAPER_BIG', 'PAPER_G', 'P_DL', 'P_XF', 'SEAL', 'TRY', 'TRY2',
@@ -77,12 +81,15 @@ if WHAT in ('all', 'img'):
     print('assets ok', len(L))
 
 # ---------------------------------------------------------------- 3. 混好的音轨（人声 + 配乐 + 音效，-14 LUFS）
-if WHAT in ('all', 'audio'):
+if want('audio'):
     voice, music, sfx, rep, v_db, vmask = build_audio()
     mix = np.clip(voice + music + sfx, -1, 1)
     with wave.open(os.path.join(TMP, 'raw.wav'), 'wb') as w:
         w.setnchannels(2); w.setsampwidth(2); w.setframerate(SR); w.writeframes((mix * 32767).astype(np.int16).tobytes())
-    subprocess.run(['ffmpeg', '-v', 'error', '-y', '-i', os.path.join(TMP, 'raw.wav'), '-af', 'loudnorm=I=-14:TP=-1.5', '-ar', '44100',
-                    '-c:a', 'aac', '-b:a', '192k', os.path.join(WEB, 'mix.m4a')], check=True)
+    # 母带：整体增益拉到 -14 LUFS + 峰值限幅 -1.5 dB（原来用 loudnorm 动态模式，要 20 秒；实测两者整片响度、动态范围一样）
+    I = lufs(mix); g = -14.0 - I
+    enc = 'aac_at' if 'aac_at' in subprocess.run(['ffmpeg', '-hide_banner', '-encoders'], capture_output=True, text=True).stdout else 'aac'   # Mac 用系统硬件编码，快很多
+    subprocess.run(['ffmpeg', '-v', 'error', '-y', '-i', os.path.join(TMP, 'raw.wav'), '-af', f'volume={g:.2f}dB,alimiter=limit=0.84:attack=1:release=50:level=disabled',
+                    '-ar', '44100', '-c:a', enc, '-b:a', '192k', os.path.join(WEB, 'mix.m4a')], check=True)
     json.dump(r3([[n, t, k] for n, t, k in rep]), open(os.path.join(WEB, 'sfx_cues.json'), 'w', encoding='utf-8'), ensure_ascii=False)
     print('mix.m4a ok')

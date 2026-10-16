@@ -13,10 +13,13 @@ const shotAt = t => D.shots.find(s => s.start <= t && t < s.end) || D.shots[D.sh
 const lastVoice = i => S[i].chars[S[i].chars.length - 1] + 0.35;
 const img = n => E.img(n);
 
+const VSRC0 = { v4: '../素材/4.空镜.mp4', v6: '../素材/6.演示录屏.mp4', v7: '../素材/7.400种.mp4',
+  v10: '../素材/10.生物.mp4', v11: '../素材/11.化学.mp4', cam: '../素材/口播/1080-压缩版.mp4' };
 E.setVideoSources(/[?&]proxy\b/.test(location.search)          // ?proxy：用 _proxy/ 里的 webm（测试用浏览器不支持 H.264 时）
   ? { v4: '_proxy/v4.webm', v6: '_proxy/v6.webm', v7: '_proxy/v7.webm', v10: '_proxy/v10.webm', v11: '_proxy/v11.webm', cam: '_proxy/cam.webm' }
-  : { v4: '../素材/4.空镜.mp4', v6: '../素材/6.演示录屏.mp4', v7: '../素材/7.400种.mp4',
-      v10: '../素材/10.生物.mp4', v11: '../素材/11.化学.mp4', cam: '../素材/口播/1080-压缩版.mp4' });
+  : /[?&]export\b/.test(location.search)                        // ?export：导出用，4/10/11 号空镜换成关键帧密的副本（_export/，跳帧快很多）
+  ? Object.assign({}, VSRC0, { v4: '_export/v4.mp4', v10: '_export/v10.mp4', v11: '_export/v11.mp4' })
+  : VSRC0);
 
 // ------------------------------------------------------------------ 真人出镜（原片镜像录的，水平翻回）
 function srcAt(t) {                             // 成片时间线 → 出镜原片时间（含提速）
