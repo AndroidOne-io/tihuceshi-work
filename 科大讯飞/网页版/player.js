@@ -4,7 +4,7 @@
   const cv = document.getElementById('c'), ctx = cv.getContext('2d');
   const au = document.getElementById('mix');
   const DUR = D.DUR; const FPS = D.FPS;
-  let tCur = 0, playing = false;
+  let tCur = 0, playing = false, exporting = false;
 
   // 资源清单（assets 里的所有图片）
   const ASSETS = window.ASSETS || [];
@@ -27,7 +27,7 @@
   function pause() { playing = false; au.pause(); E.setMode('seek'); tCur = au.currentTime; draw(tCur); ui(); }
   function loop() {
     if (playing) { tCur = au.currentTime; if (au.ended || tCur >= DUR) { pause(); } draw(tCur); ui(); }
-    else if (E.busy()) draw(tCur);                // 暂停/拖动时视频还在跳转：跳好之前一直重画，跳到位就自动更新
+    else if (!exporting && E.busy()) draw(tCur);                // 暂停/拖动时视频还在跳转：跳好之前一直重画，跳到位就自动更新
     requestAnimationFrame(loop);
   }
   let drag = false;
@@ -47,8 +47,8 @@
 
   // 导出 / 截图：精确到帧（等视频跳到位再画）
   window.renderAt = async t => {
-    E.setMode('seek'); playing = false; au.pause();
-    frame(ctx, t); E.syncVideos(); await E.videosSettled(); frame(ctx, t);   // 第一遍只为登记要用哪些视频的哪一刻；等全部跳到位后画最终一遍
+    exporting = true; tCur = t; E.setMode('seek'); playing = false; au.pause();   // 导出期间暂停播放器自己的重画，否则会把视频跳回旧时刻
+    frame(ctx, t); E.syncVideos(); await E.videosSettled(); frame(ctx, t); exporting = false;   // 第一遍只为登记要用哪些视频的哪一刻；等全部跳到位后画最终一遍
     tCur = t; ui(); return true;
   };
   window.player = { seek, play, pause, get t() { return tCur; } };
