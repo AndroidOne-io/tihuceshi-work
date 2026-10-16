@@ -52,7 +52,7 @@ git lfs install
 python3 -m pip install numpy opencv-python pillow matplotlib
 
 # 2. 拉工程（视频素材在 Git LFS 里，必须 git lfs pull）
-git clone -b xunfei-ai4s-edit https://github.com/AndroidOne-io/tihuceshi-work.git
+git clone -b xunfei-ai4s-edit_codex https://github.com/AndroidOne-io/tihuceshi-work.git
 cd tihuceshi-work && git lfs pull
 
 # 3. 先试渲染 2 秒，确认环境没问题
