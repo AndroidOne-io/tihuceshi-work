@@ -19,6 +19,13 @@ def nchars(s): return [m.group(0) for m in re.finditer(r'[一-鿿]|[A-Za-z]+|\d+
 # ---------------------------------------------------------------- 1. 时间线：每行用真实录音（画外音 wav / 出镜视频），按字卡点
 import difflib
 takes = json.load(open(ALIGN))
+# 英文词的识别时间落在词中部；恢复原版已核对的 OpenAI 词头。
+VOICE_HEADS = {8.95: 9.01, 18.50: 18.60}
+for tk in takes:
+    if tk['src'] == 'vo' and tk['a'] in VOICE_HEADS:
+        assert tk['chars'][0][0].lower() == 'openai'
+        tk['chars'][0][3] = VOICE_HEADS[tk['a']]
+
 SKIP_ROWS = set()                      # 第 20 行已补录（声音克隆）
 SHOTS = [(i, s) for i, s in enumerate(SH, 1) if s[0] not in SKIP_ROWS]
 rows = sorted({s[0] for _, s in SHOTS})
@@ -61,8 +68,29 @@ for r in rows:
             pieces.append((p0, m, cuts.get(m, 0.08 if m < len(said) else 0))); p0 = m
     out_t = [0.0] * len(said)
     row0 = t
+    previous_end = None
     for a, b, gap in pieces:
         a0 = said[a][2] - LEAD; a1 = said[b - 1][2] + TAIL
+        if a == 0 and re.fullmatch(r'[A-Za-z]+', said[a][0]):
+            a0 = max(a0, row_takes[r][said[a][3]]['a'])
+        elif a and said[a][3] != said[a - 1][3] and re.fullmatch(r'[A-Za-z]+', said[a][0]):
+            a0 = max(a0, row_takes[r][said[a][3]]['a'])
+        # 同一 take 被停顿拆开时，共用一个源切点，避免把下一句的
+        # 「支」等音节提前带进前段，再在后段重复播放。
+        if previous_end is not None and a and said[a][3] == said[a - 1][3]:
+            a0 = max(a0, previous_end)
+        if b < len(said) and said[b][3] == said[b - 1][3]:
+            boundary = said[b][2] - 0.04
+            # 英文对齐时间代表词起点；Science 的词尾超过固定 0.32 秒。
+            if re.fullmatch(r'[A-Za-z]+', said[b - 1][0]):
+                a1 = boundary
+            else:
+                a1 = min(a1, boundary)
+        # 第一条录音在 12.79 秒已开始念下一句 OpenAI；只保留“项目里”后的静音，避免多出一个 o。
+        tk = row_takes[r][said[b - 1][3]]
+        if tk['src'] == 'vo' and tk['a'] == 8.95:
+            a1 = min(a1, 12.75)
+        previous_end = a1
         audio_pieces.append((a0, a1, t, said[a][1]))
         k = SPEED[said[a][1]]
         for m in range(a, b): out_t[m] = t + (said[m][2] - a0) / k
@@ -73,7 +101,7 @@ for r in rows:
         st = row0 if j == 0 else ch[0][1] - 0.06
         shots.append(dict(i=i, row=r, text=x[1].strip(), start=st, chars=ch, kind=x[2], vo=True, pause=x[8] or 0))
     t += rs[-1][1][8] or 0
-    t += ROW_GAP
+    t += 0.05 if r == 8 else ROW_GAP  # 海外→国内：去掉走廊空镜，只留 50 ms 接气
 TOTAL = t + 0.8
 for a, b in zip(shots, shots[1:]): a['end'] = b['start']
 shots[-1]['end'] = TOTAL
@@ -125,13 +153,30 @@ def split_lines(txt, maxw=16.0):
         lines = lines[:-2] + [''.join(tk[:k + 1]), ''.join(tk[k + 1:])]
     return lines
 
+from caption_lines import CAPTION_LINES
+
+def caption_times(s, tokens):
+    # 校对后补字、同音字修正不会让后续字幕累计错位。
+    original = [c.lower() for c, _ in s['chars']]
+    times = np.full(len(tokens), np.nan)
+    matcher = difflib.SequenceMatcher(None, [c.lower() for c in tokens], original, autojunk=False)
+    for block in matcher.get_matching_blocks():
+        for k in range(block.size): times[block.a + k] = s['chars'][block.b + k][1]
+    known = np.flatnonzero(np.isfinite(times))
+    if not len(known): raise ValueError(f"字幕无法对齐：镜头 {s['i']}")
+    return np.interp(np.arange(len(times)), known, times[known]).tolist()
+
 SUBS = []
 for s in shots:
     if s['i'] in (13, 17, 36): continue                 # 大字时刻不出字幕（不重复大字）
     txt = s['text']
     for a, b in SUB_FIX.items(): txt = txt.replace(a, b)
-    lines = split_lines(txt.replace('\n', ''))
-    q = 0; times = [c[1] for c in s['chars']]
+    txt = txt.replace('表现的多优秀', '表现得多优秀')
+    lines = CAPTION_LINES[s['i']]
+    tokens = nchars(''.join(lines))
+    assert [c.lower() for c in tokens] == [c.lower() for c in nchars(txt)], f"字幕漏字或添字：{s['i']}"
+    assert not any(re.search(r'[，。？！；：、“”「」（）！？,!?;:"()]', line) for line in lines)
+    q = 0; times = caption_times(s, tokens)
     for ln in lines:
         n = len(nchars(ln)); t0 = times[min(q, len(times) - 1)] - 0.08; q += n
         SUBS.append([max(s['start'], t0), ln.rstrip('，。、；：'), s['i']])

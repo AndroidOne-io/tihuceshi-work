@@ -8,7 +8,7 @@ sys.argv = ['timeline.py', sys.argv[1], sys.argv[2]]
 OUT = sys.argv[2]
 HERE = os.path.dirname(os.path.abspath(__file__))
 # 口播停顿（只停在全屏画面上）：开场问题、最重的事实、向内/向外对比、论点大字、包袱、片名、转国内
-PAUSE_OVR = {1: 1.0, 8: 0.6, 11: 0.4, 13: 0.4, 15: 0.4, 17: 1.2, 18: 0.5, 25: 0.6, 36: 0.4, 47: 0.6, 50: 0.6, 60: 0.4, 70: 0.5, 71: 1.6}   # 客户反馈：留白短一点（合计 14.3 → 7.4 秒）
+PAUSE_OVR = {1: 1.0, 8: 0.6, 11: 0.4, 13: 0.4, 15: 0.4, 17: 1.2, 18: 0.0, 25: 0.6, 36: 0.4, 47: 0.6, 50: 0.6, 60: 0.4, 70: 0.05, 71: 1.6}   # 客户反馈：留白短一点（合计 14.3 → 7.4 秒）
 exec(open(os.path.join(HERE, 'timeline.py'), encoding='utf-8').read().split("if __name__ == '__main__':")[0])
 from v4 import *
 from v3 import badge_table
@@ -33,7 +33,7 @@ EV = dict(
     cut10=S[10]['start'], doc=wt(10, '写文章'), lst=wt(10, '总结资料'), inward=wt(10, '向内索取'), tidy=wt(10, '整理'),
     outward=wt(11, '向外延伸'), rule=wt(11, '新的规律'),
     use=wt(13, '使用知识'), create=wt(13, '参与创造知识'),
-    meme=S[15]['start'], afs=wt(17, 'AI for Science'), bridge=last_voice(18), cut19=S[19]['start'],
+    meme=S[15]['start'], afs=wt(17, 'AI for Science'), bridge=S[19]['start'], cut19=S[19]['start'],
     cut22=S[22]['start'], ch_in=last_voice(25), cut26=S[26]['start'], cut28=S[28]['start'], cut30=S[30]['start'], cut32=S[32]['start'], cut33=S[33]['start'],
     cut35=S[35]['start'], cut36=S[36]['start'], fall=wt(36, '中试') + 0.15, valley=wt(36, '死亡之谷'), cut37=S[37]['start'],
 )
@@ -160,11 +160,15 @@ C_LST = make_card(150, 150, 'rect', 24, TEAL, 0.62, None, 'list', rim=0.5)
 W_IN = shadow(text('向内索取', F_BLACK, 104, WHITE, 0.08), 10, (0, 4), 180)
 W_OUT = shadow(glow_rgba(text('向外延伸', F_BLACK, 104, GOLD, 0.08), GOLD, 18, 0.4), 10, (0, 4), 180)
 
-def pip2(f, t, cx=250, cy=H - 255, d=320, u=1.0, out=0.0):
+def pip2(f, t, cx=220, cy=H - 260, d=240, u=1.0, out=0.0):
     if u <= 0 or out >= 1: return f
     d2 = int(d * back_out(u) * (1 - ease_in(out, 2)))
     if d2 < 8: return f
-    fr = cover(cam_frame(t), d2, d2, 0.5, 0.32)
+    # 圆窗只保留头肩，缩小外圈后仍能看清表情；全片共用这一构图。
+    src = cam_frame(t)
+    ih, iw = src.shape[:2]; side = int(min(ih * 0.66, iw))
+    x0 = (iw - side) // 2; y0 = int(ih * 0.035)
+    fr = cover(src[y0:y0 + side, x0:x0 + side], d2, d2)
     m = Image.new('L', (d2, d2), 0); ImageDraw.Draw(m).ellipse([2, 2, d2 - 3, d2 - 3], fill=255)
     im = Image.fromarray(np.dstack([fr, np.array(m)]).astype(np.uint8), 'RGBA')
     ring = Image.new('RGBA', (d2 + 10, d2 + 10), (0, 0, 0, 0)); ImageDraw.Draw(ring).ellipse([1, 1, d2 + 8, d2 + 8], outline=(255, 255, 255, 220), width=3)
@@ -256,13 +260,8 @@ def v17(t):
         f = shake(f, max(0.0, 1 - (t - hit) / 0.4), int(t * 30))
     return bloom(f, 0.2)
 
-# ================================================================ 18 → 过渡：话题转回国内（停顿落在画面上）
-def v18(t):
-    if t < EV['bridge']: return host(1.06)(t)
-    k = t - EV['bridge']
-    v = cover(V4.get(0.5 + k * 0.8), W, H).astype(np.float32); g = v.mean(2, keepdims=True)
-    f = (v * 0.5 + g * 0.5) * np.array([1.06, 1.0, 0.9])
-    return zoom(f, 1.0 + 0.05 * k, 0.5, 0.5)
+# ================================================================ 18：海外转国内，口播后直接接第 19 镜
+def v18(t): return host(1.06)(t)
 
 VIS = {1: v1, 2: F2, 3: lambda t: F3a(t) if t < EV['split3'] else whip(F3b(t), max(0, 1 - (t - EV['split3']) / 0.2)),
        4: papers, 5: v5, 6: host(1.06, [(LOCK, EV['lock'], 1520, 420)]), 7: v78, 8: v78,
@@ -301,6 +300,11 @@ def frame_(t_out):
         t0 = EV[c]
         if 0 <= t - t0 < 0.2: f = whip(f, 1 - (t - t0) / 0.2)
         if 0 < t0 - t < 0.1: f = whip(f, (0.1 - (t0 - t)) / 0.1 * 0.8)
+    # 品牌句 → 回顾段：两段出镜取景不同，用短暂淡过背景遮住跳切。
+    cut = EV['cut62']
+    if cut - 0.12 < t < cut + 0.16:
+        opacity = ease(seg(t, cut - 0.12, cut)) if t < cut else 1 - ease(seg(t, cut, cut + 0.16))
+        f = f * (1 - opacity) + BG * opacity
     subtitle(f, sub_now(t))
     return f
 
@@ -362,9 +366,14 @@ def build_audio():
     def rms_src(src): return np.sqrt(np.mean(np.concatenate([RAW[src][int(a / SPEED[sr] * SR):int(b / SPEED[sr] * SR)] for a, b, o, sr in audio_pieces if sr == src]) ** 2))
     GN = {k: rms_src('vo') / rms_src(k) for k in ('vo', 'cam', 'r20')}       # 三种录音响度对齐
     N = int((DUR + 0.5) * SR); voice = np.zeros((N, 2), np.float32)
-    for a0, a1, o, sr in audio_pieces:
+    for piece_index, (a0, a1, o, sr) in enumerate(audio_pieces):
         k = SPEED[sr]; x = RAW[sr][int(a0 / k * SR):int(a1 / k * SR)] * GN[sr]; i = int((o + PRE) * SR); n = min(len(x), N - i)
-        fd = np.ones(n, np.float32); k = int(0.025 * SR); fd[:k] = np.linspace(0, 1, k); fd[-k:] = np.linspace(1, 0, k)
+        prev = audio_pieces[piece_index - 1] if piece_index else None
+        nxt = audio_pieces[piece_index + 1] if piece_index + 1 < len(audio_pieces) else None
+        joined_in = prev is not None and abs(prev[2] + (prev[1] - prev[0]) / SPEED[prev[3]] - o) < 1 / SR
+        joined_out = nxt is not None and abs(o + (a1 - a0) / k - nxt[2]) < 1 / SR
+        ki, ko = min(n, int((.003 if joined_in else .025) * SR)), min(n, int((.003 if joined_out else .025) * SR))
+        fd = np.ones(n, np.float32); fd[:ki] = np.linspace(0, 1, ki); fd[-ko:] = np.linspace(1, 0, ko)
         voice[i:i + n] += x[:n] * fd[:, None]
     vmask = np.abs(voice).mean(1) > 0; v_db = db(voice[vmask]); v_lufs = lufs(voice)     # 配乐按听感响度（LUFS）对齐人声
     act = np.convolve(np.abs(voice).mean(1), np.ones(int(0.05 * SR)) / int(0.05 * SR), 'same') > 10 ** ((v_db - 25) / 20)

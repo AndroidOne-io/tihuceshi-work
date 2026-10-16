@@ -79,7 +79,10 @@ if WHAT in ('all', 'img'):
 # ---------------------------------------------------------------- 3. 混好的音轨（人声 + 配乐 + 音效，-14 LUFS）
 if WHAT in ('all', 'audio'):
     voice, music, sfx, rep, v_db, vmask = build_audio()
-    mix = np.clip(voice + music + sfx, -1, 1)
+    mix = voice + music + sfx
+    # 恢复旧版防削波处理，先留峰值余量，再做响度归一。
+    peak = float(np.abs(mix).max())
+    mix *= min(1.0, .90 / max(peak, 1e-9))
     with wave.open(os.path.join(TMP, 'raw.wav'), 'wb') as w:
         w.setnchannels(2); w.setsampwidth(2); w.setframerate(SR); w.writeframes((mix * 32767).astype(np.int16).tobytes())
     subprocess.run(['ffmpeg', '-v', 'error', '-y', '-i', os.path.join(TMP, 'raw.wav'), '-af', 'loudnorm=I=-14:TP=-1.5', '-ar', '44100',

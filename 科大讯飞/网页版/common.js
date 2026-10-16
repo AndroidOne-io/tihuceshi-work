@@ -29,10 +29,16 @@ function srcAt(t) {                             // 成片时间线 → 出镜原
   }
   return [best ? best[1] : 0, 0];
 }
-function camFrame(ctx, t, x, y, w, h, fx = 0.5, fy = 0.35) {   // 把出镜画面（翻转后）铺满 (x,y,w,h)
+function camFrame(ctx, t, x, y, w, h, fx = 0.5, fy = 0.35, headShoulders = false) {   // 把出镜画面（翻转后）铺满 (x,y,w,h)
   const [ts, k] = srcAt(t); const v = E.video('cam', ts, k);
   if (!E.ready(v)) { ctx.fillStyle = '#222'; ctx.fillRect(x, y, w, h); return; }
-  ctx.save(); ctx.translate(x + w, y); ctx.scale(-1, 1); E.cover(ctx, v, 0, 0, w, h, 1 - fx, fy); ctx.restore();
+  ctx.save(); ctx.translate(x + w, y); ctx.scale(-1, 1);
+  if (headShoulders) {
+    const side = Math.floor(Math.min(v.videoHeight * 0.66, v.videoWidth));
+    const sx = Math.floor((v.videoWidth - side) / 2), sy = Math.floor(v.videoHeight * 0.035);
+    ctx.drawImage(v, sx, sy, side, side, 0, 0, w, h);
+  } else E.cover(ctx, v, 0, 0, w, h, 1 - fx, fy);
+  ctx.restore();
 }
 function host(z0 = 1.0, cards = []) {
   return (ctx, t) => {
@@ -41,7 +47,7 @@ function host(z0 = 1.0, cards = []) {
     for (const [im, t0, x, y] of cards) { const k = seg(t, t0, t0 + 0.3); if (k > 0) E.put(ctx, img(im), x + 40 * (1 - easeOut(k)), y, k); }
   };
 }
-function pip2(ctx, t, u = 1, out = 0, cx = 250, cy = H - 255, d = 320) {   // 左下角圆形小窗
+function pip2(ctx, t, u = 1, out = 0, cx = 220, cy = H - 260, d = 240) {   // 左下角圆形小窗
   if (u <= 0 || out >= 1) return;
   const d2 = d * backOut(u) * (1 - easeIn(out, 2)); if (d2 < 8) return;
   ctx.save();
@@ -49,7 +55,7 @@ function pip2(ctx, t, u = 1, out = 0, cx = 250, cy = H - 255, d = 320) {   // �
   ctx.beginPath(); ctx.arc(cx, cy, d2 / 2 + 4, 0, Math.PI * 2); ctx.fillStyle = 'rgba(255,255,255,0.86)'; ctx.fill();
   ctx.shadowColor = 'transparent';
   ctx.beginPath(); ctx.arc(cx, cy, d2 / 2, 0, Math.PI * 2); ctx.clip();
-  camFrame(ctx, t, cx - d2 / 2, cy - d2 / 2, d2, d2, 0.5, 0.32);
+  camFrame(ctx, t, cx - d2 / 2, cy - d2 / 2, d2, d2, 0.5, 0.32, true);
   ctx.restore();
 }
 
@@ -121,6 +127,12 @@ function frame(ctx, tOut) {
       if (D.QUIET.includes(c)) continue; const t0 = EV[c]; if (t0 === undefined) continue;
       if (t - t0 >= 0 && t - t0 < 0.2) E.whip(ctx, 1 - (t - t0) / 0.2);
       if (t0 - t > 0 && t0 - t < 0.1) E.whip(ctx, (0.1 - (t0 - t)) / 0.1 * 0.8);
+    }
+    // 品牌句接回顾段：恢复原版短淡过背景，遮住出镜构图跳变。
+    const cut = EV.cut62;
+    if (cut - .12 < t && t < cut + .16) {
+      const opacity = t < cut ? ease(seg(t, cut - .12, cut)) : 1 - ease(seg(t, cut, cut + .16));
+      ctx.save(); ctx.globalAlpha = opacity; bg(ctx, 'BG'); ctx.restore();
     }
     E.subtitle(ctx, subNow(t));
   }

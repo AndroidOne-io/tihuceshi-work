@@ -46,7 +46,7 @@ function v6364(ctx, t) {
     E.put(ctx, img('B_AI'), cx, cy, 1, 0.72 * (1 + 0.04 * Math.sin(t * 3)));
     pos.forEach(([x, y], j) => { const k = seg(t, ts[j], ts[j] + 0.3); E.put(ctx, img('LOOP_IM_' + j), x, y, 0.35 + 0.65 * easeOut(k), k > 0 ? 0.85 + 0.15 * backOut(k) : 0.85); });
   }
-  pip2(ctx, t, easeOut(seg(t, EV.cut63, EV.cut63 + 0.4)));
+  pip2(ctx, t, easeOut(seg(t, EV.cut63, EV.cut63 + 0.4)), seg(t, lastVoice(64) - 0.35, lastVoice(64) - 0.05));
 }
 VIS[63] = v6364; VIS[64] = v6364;
 
