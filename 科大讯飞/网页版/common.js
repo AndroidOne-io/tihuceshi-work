@@ -124,6 +124,6 @@ function frame(ctx, tOut) {
     }
     E.subtitle(ctx, subNow(t));
   }
-  const fade = clamp((PRE + D.TOTAL + D.TAIL - tOut) / 1.4, 0, 1);
+  const fade = clamp((PRE + D.TOTAL + D.TAIL - tOut) / 0.3, 0, 1);   // 最后 0.3 秒快速压黑
   if (fade < 1) E.fill(ctx, '#000', 1 - fade);
 }

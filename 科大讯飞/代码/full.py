@@ -8,7 +8,7 @@ sys.argv = ['timeline.py', sys.argv[1], sys.argv[2]]
 OUT = sys.argv[2]
 HERE = os.path.dirname(os.path.abspath(__file__))
 # 口播停顿（只停在全屏画面上）：开场问题、最重的事实、向内/向外对比、论点大字、包袱、片名、转国内
-PAUSE_OVR = {1: 1.0, 8: 0.6, 11: 0.4, 13: 0.4, 15: 0.4, 17: 1.2, 18: 0.5, 25: 0.6, 36: 0.4, 47: 0.6, 50: 0.6, 60: 0.4, 70: 0.5, 71: 1.6}   # 客户反馈：留白短一点（合计 14.3 → 7.4 秒）
+PAUSE_OVR = {1: 1.0, 8: 0.6, 11: 0.4, 13: 0.4, 15: 0.4, 17: 1.2, 18: 0.5, 25: 0.6, 36: 0.4, 47: 0.6, 50: 0.6, 60: 0.4, 70: 0.5, 71: 0.0}   # 客户反馈：留白短一点（合计 14.3 → 7.4 秒）
 exec(open(os.path.join(HERE, 'timeline.py'), encoding='utf-8').read().split("if __name__ == '__main__':")[0])
 from v4 import *
 from v3 import badge_table
@@ -20,6 +20,10 @@ S = {s['i']: s for s in shots}
 def wt(i, word):
     s = S[i]; txt = s['text']; k = len(nchars(txt[:txt.index(word)])); return s['chars'][k][1]
 def last_voice(i): return S[i]['chars'][-1][1] + 0.35
+# 结尾（用户要求）：最后一句「值得所有人期待」说完 0.3 秒就结束，不要片尾画面。出镜原片在这句之后只剩约 0.3 秒，所以不能再往后拖。
+_a0, _a1, _o, _src = audio_pieces[-1]
+TOTAL = _o + (_a1 - _a0) / SPEED[_src] + 0.3
+shots[-1]['end'] = TOTAL; shots[-1]['dur'] = TOTAL - shots[-1]['start']
 
 # ================================================================ 事件表
 T0 = S[1]['chars'][0][1]
@@ -287,9 +291,9 @@ def sub_now(t):
     if s is None or s['i'] in NO_SUB or t > s['chars'][-1][1] + 0.45: return ''      # 说完就收字幕
     return sub_at(t)
 
-TAIL = 1.2                                   # 片尾：最后一句说完后画面渐黑、配乐尾音放完
+TAIL = 0.0                                   # 不要片尾：说完即结束（只在最后 0.3 秒快速压黑，避免定格在人脸上）
 def frame(t_out):
-    fade = min(1.0, max(0.0, (PRE + TOTAL + TAIL - t_out) / 1.4))     # 收尾画面一直在动，最后 1.4 秒渐黑（不再定格）
+    fade = min(1.0, max(0.0, (PRE + TOTAL + TAIL - t_out) / 0.3))     # 最后 0.3 秒快速压黑
     return frame_(t_out) * fade if fade < 1.0 else frame_(t_out)
 def frame_(t_out):
     t = t_out - PRE; CUR_T[0] = max(t, 0)

@@ -34,8 +34,8 @@ MUSIC = [
       dip=[EV['n400']], ref=30.0, under=-18),
     # 7 C2 生物医药：开头的重拍对准「02 生物医药」章节卡，和上一首交叉
     M(NEW + 'the_mountain-inspiring-technology-179473.mp3', 1.9, EV['ch2_in'], EV['ch2_in'] - 0.8, EV['cut61'] + 1.0, fin=0.8, fout=1.6, ref=10.0, under=-18),
-    # 8 D 温暖结尾：品牌句 → 总结 → 1024 → 收尾画面。高潮起在 1024，回落对准最后一句真人口播，尾音铺满收尾画面再淡出
-    M(NEW + 'echoes_of_lumen-hope-music-hopeful-piano-586991.mp3', 139.5, EV['cut71'], EV['cut61'] - 0.8, TOTAL + 1.2, fin=1.6, fout=1.8,
+    # 8 D 温暖结尾：品牌句 → 总结 → 1024 → 最后一句。高潮起在 1024，回落对准最后一句真人口播；片子说完即结束，所以在最后一句下面 2.5 秒淡出，和画面同时收（不硬切）
+    M(NEW + 'echoes_of_lumen-hope-music-hopeful-piano-586991.mp3', 139.5, EV['cut71'], EV['cut61'] - 0.8, TOTAL, fin=1.6, fout=2.5,
       dip=[EV['real']], ref=80.0),
 ]
 

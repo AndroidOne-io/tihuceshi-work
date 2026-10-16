@@ -78,9 +78,7 @@ def endcard(t):
     put(f, sweep(T_AFS, seg(q, 0.5, 1.8)), W / 2, H / 2 - 10, u, scale=(0.92 + 0.08 * u) * (1 + 0.02 * q))
     return f
 def v71(t):
-    if t < EV['endcard']: return host(1.06 if t < EV['ordinary'] - 0.1 else 1.0)(t)
-    k = ease(seg(t, EV['endcard'], EV['endcard'] + 0.35))
-    return endcard(t) if k >= 1 else host(1.0)(t) * (1 - k) + endcard(t) * k
+    return host(1.06 if t < EV['ordinary'] - 0.1 else 1.0)(t)          # 说完即结束，不接收尾画面（endcard 保留备用）
 
 # ---------------------------------------------------------------- 66 / 70 活动页（横幅已补成 16:9）
 IMG9 = img('9'); BG9 = bg_gild(backdrop=cover(IMG9, W, H), dim=0.12, key='p9')
@@ -144,4 +142,4 @@ SFX_MORE += [(f'回顾卡{k + 1}', EV[e], 'thud', 0.13) for k, e in enumerate(('
 STILLS = [('62 回顾', EV['r_prot'] + 0.6), ('63 书', EV['more'] + 0.3), ('63 变灰', last_voice(63) - 0.1), ('64 循环', EV['s3'] + 0.3),
           ('64 转圈', S[64]['end'] - 0.4), ('65', EV['but'] + 1.0), ('66 1024', S[66]['start'] + 3.0), ('67 空镜', EV['real'] - 1.0),
           ('67 真实场景', EV['real'] + 1.0), ('68 场景', EV['sc'][4] + 0.4), ('69 着落', EV['land'] + 0.2), ('70 左', S[70]['start'] + 1.0),
-          ('70 右', S[70]['start'] + 6.5), ('71', EV['ordinary'] + 0.5), ('收尾 0.5s', EV['endcard'] + 0.5), ('收尾 2s', EV['endcard'] + 2.0), ('最后一帧', TOTAL + TAIL - 0.05)]
+          ('70 右', S[70]['start'] + 6.5), ('71', EV['ordinary'] + 0.5), ('说完', EV['endcard']), ('最后一帧', TOTAL + TAIL - 0.05)]
