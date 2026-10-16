@@ -107,10 +107,5 @@ function endcard(ctx, t) {
   E.put(ctx, E.sweep(img('T_AFS'), seg(q, 0.5, 1.8), 0.14, 1, 'sw_end'), W / 2, H / 2 - 10, u, (0.92 + 0.08 * u) * (1 + 0.02 * q));
 }
 VIS[71] = (ctx, t) => {
-  if (t < EV.endcard) return host(t < EV.ordinary - 0.1 ? 1.06 : 1.0)(ctx, t);
-  const k = ease(seg(t, EV.endcard, EV.endcard + 0.35));
-  if (k >= 1) return endcard(ctx, t);
-  host(1.0)(ctx, t);
-  const c = E.tmp('endx'), g = c.getContext('2d'); g.setTransform(1, 0, 0, 1, 0, 0); g.globalAlpha = 1; g.globalCompositeOperation = 'source-over';
-  endcard(g, t); ctx.save(); ctx.globalAlpha = k; ctx.drawImage(c, 0, 0); ctx.restore();
+  host(t < EV.ordinary - 0.1 ? 1.06 : 1.0)(ctx, t);          // 说完即结束，不接收尾画面（endcard 保留备用）
 };

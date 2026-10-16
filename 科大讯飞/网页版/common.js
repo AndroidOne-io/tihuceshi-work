@@ -34,8 +34,9 @@ function camFrame(ctx, t, x, y, w, h, fx = 0.5, fy = 0.35, headShoulders = false
   if (!E.ready(v)) { ctx.fillStyle = '#222'; ctx.fillRect(x, y, w, h); return; }
   ctx.save(); ctx.translate(x + w, y); ctx.scale(-1, 1);
   if (headShoulders) {
-    const side = Math.floor(Math.min(v.videoHeight * 0.66, v.videoWidth));
-    const sx = Math.floor((v.videoWidth - side) / 2), sy = Math.floor(v.videoHeight * 0.035);
+    const [vw, vh] = E.sizeOf(v);  // 新版视频缓存返回 canvas，也使用统一尺寸接口
+    const side = Math.floor(Math.min(vh * 0.66, vw));
+    const sx = Math.floor((vw - side) / 2), sy = Math.floor(vh * 0.035);
     ctx.drawImage(v, sx, sy, side, side, 0, 0, w, h);
   } else E.cover(ctx, v, 0, 0, w, h, 1 - fx, fy);
   ctx.restore();
@@ -136,6 +137,6 @@ function frame(ctx, tOut) {
     }
     E.subtitle(ctx, subNow(t));
   }
-  const fade = clamp((PRE + D.TOTAL + D.TAIL - tOut) / 1.4, 0, 1);
+  const fade = clamp((PRE + D.TOTAL + D.TAIL - tOut) / 0.3, 0, 1);   // 最后 0.3 秒快速压黑
   if (fade < 1) E.fill(ctx, '#000', 1 - fade);
 }

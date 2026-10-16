@@ -27,6 +27,7 @@
   function pause() { playing = false; au.pause(); E.setMode('seek'); tCur = au.currentTime; draw(tCur); ui(); }
   function loop() {
     if (playing) { tCur = au.currentTime; if (au.ended || tCur >= DUR) { pause(); } draw(tCur); ui(); }
+    else if (E.busy()) draw(tCur);                // 暂停/拖动时视频还在跳转：跳好之前一直重画，跳到位就自动更新
     requestAnimationFrame(loop);
   }
   let drag = false;
