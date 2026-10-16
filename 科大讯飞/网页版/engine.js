@@ -55,12 +55,23 @@ const E = (() => {
     }
     return pool[key][slot];
   }
+  // 返回可以直接画的画面：视频解好了就先拷一份到缓存画布再返回缓存；正在跳转/还没解出来时返回上一帧的缓存。
+  // 这样高倍速快进（每帧都要跳转）或播放中校正跳转时，画面不会一闪一闪（第 43、44 镜就是 20–35 倍速）。
+  let FRAME = 0;
   function video(key, ts, rate = 1, slot = 0) {
-    const s = slotOf(key, slot); const d = s.el.duration;
+    const s = slotOf(key, slot), el = s.el, d = el.duration;
     s.want = Math.max(0, isFinite(d) ? Math.min(ts, d - 0.05) : ts); s.rate = rate; s.used = true;
-    return s.el;
+    const ok = el.readyState >= 2 && !el.seeking && el.videoWidth > 0;
+    if (ok && s.at !== FRAME) {
+      if (!s.cache || s.cache.width !== el.videoWidth || s.cache.height !== el.videoHeight) {
+        s.cache = document.createElement('canvas'); s.cache.width = el.videoWidth; s.cache.height = el.videoHeight; s.filled = false;
+      }
+      s.cache.getContext('2d').drawImage(el, 0, 0); s.filled = true; s.at = FRAME;
+    }
+    return s.filled ? s.cache : el;
   }
   function syncVideos() {
+    FRAME++;
     for (const key in pool) for (const s of pool[key]) {
       const el = s.el;
       if (!s.used) { if (!el.paused) el.pause(); continue; }
@@ -100,6 +111,7 @@ const E = (() => {
       el.addEventListener('loadeddata', ok, { once: true }); el.addEventListener('error', bad, { once: true }); setTimeout(() => r(el.readyState >= 1 ? null : k), timeout);
     }))).then(a => a.filter(Boolean));
   }
+  function busy() { for (const k in pool) for (const s of pool[k]) if (s.el.seeking) return true; return false; }
   function allVideos() { const r = []; for (const k in pool) for (const s of pool[k]) r.push(s.el); return r; }
   const ready = el => el && (el.readyState >= 2 || el instanceof HTMLImageElement || el instanceof HTMLCanvasElement);
   const sizeOf = el => el instanceof HTMLVideoElement ? [el.videoWidth || 1920, el.videoHeight || 1080] : [el.width, el.height];
@@ -314,7 +326,7 @@ const E = (() => {
   }
   function blurDraw(ctx, src, r, x = 0, y = 0, w = W, h = H, a = 1, op = 'source-over') { const b = blurred(src, r, 'bd'); ctx.save(); ctx.globalAlpha *= a; ctx.globalCompositeOperation = op; ctx.drawImage(b, x, y, w, h); ctx.restore(); }
 
-  return { W, H, clamp, seg, lerp, ease, easeOut, easeIn, backOut, rgb, rng, IMG, img, loadImages, tmp, setVideoSources, video, syncVideos, videosSettled, allVideos, probeVideos,
+  return { W, H, clamp, seg, lerp, ease, easeOut, easeIn, backOut, rgb, rng, IMG, img, loadImages, tmp, setVideoSources, video, syncVideos, videosSettled, allVideos, probeVideos, busy,
     ready, sizeOf, put, cover, fill, flash, grade, zoomBegin, zoomEnd, whip, shake, glitch, solveH, mapPt, projQuad, roundedOutline, pathPoly, drawWarped,
     persp, dimExcept, quadOf, bboxOf, hlBar, subtitle, number, sweep, glowBegin, glowEnd, dot, ring, line, layer, blurred, addLayer, blurDraw,
     setMode: m => { MODE = m; }, getMode: () => MODE };
