@@ -23,7 +23,8 @@ music = [
     dict(file='Fluffing a Duck - Kevin MacLeod.mp3', src=0.0, at=T(66.0) - 0.05, until=m0 + 0.1, fade_in=0.05, fade_out=0.3, level=-20),
     # --- seg 3
     dict(file='轻松滑稽-Monkeybiz.mp3', src=1.0, ref_ss=4.0, at=79.45, until=T(83.72) - 0.35, fade_in=0.2, fade_out=0.12, level=-22),
-    dict(file='Mombasa - Hans Zimmer.m4a', src=13.0, ref_ss=14.0, at=T(83.72), until=T(96.96) - 0.1, fade_in=0.01, fade_out=0.08, level=-19),
+    dict(file='Mombasa - Hans Zimmer.m4a', src=13.0, ref_ss=14.0, at=T(83.72), until=T(83.88) - 0.05, fade_in=0.01, fade_out=0.25, level=-19),
+    dict(file='Challengers.wav', src=2.0, ref_ss=4.0, at=T(83.88) - 0.05, until=T(96.96) - 0.1, fade_in=0.05, fade_out=0.08, level=-22),
     dict(file='Heart of Courage - Two Steps From Hell.mp3', src=72.0, ref_ss=72.0, at=T(96.96) + 0.1, until=T(102.1), fade_in=0.3, fade_out=0.05, level=-18),
     dict(file='Monkeys Spinning Monkeys - Kevin MacLeod.m4a', src=1.0, ref_ss=4.0, at=T(104.25) - 0.05, until=T(121.1) - 0.3, fade_in=0.3, fade_out=0.15, level=-22),
     # --- seg 4
