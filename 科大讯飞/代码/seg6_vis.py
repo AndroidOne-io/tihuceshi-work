@@ -61,7 +61,8 @@ def v6364(t):
         for im, (x, y), t0 in zip(LOOP_IM, pos, ts):
             k = seg(t, t0, t0 + 0.3)
             put(f, im, x, y, 0.35 + 0.65 * ease_out(k), scale=0.85 + 0.15 * back_out(k) if k > 0 else 0.85)
-    return pip2(f, t, u=ease_out(seg(t, EV['cut63'], EV['cut63'] + 0.4)))
+    out = seg(t, last_voice(64) - 0.35, last_voice(64) - 0.05)
+    return pip2(f, t, u=ease_out(seg(t, EV['cut63'], EV['cut63'] + 0.4)), out=out)
 
 # ---------------------------------------------------------------- 65 / 71 真人
 def v65(t): return host(1.0 if t < EV['but'] - 0.1 else 1.12)(t)

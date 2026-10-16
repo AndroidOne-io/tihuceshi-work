@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>科大讯飞 · 工程预览</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#11141a;color:#e8ecf5;font:15px system-ui,sans-serif}main{max-width:1180px;margin:28px auto;padding:0 24px}header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}h1{font-size:22px;margin:0}p{color:#a6afbf;line-height:1.6}.screen{background:#000;aspect-ratio:16/9;border:1px solid #323847;border-radius:10px;overflow:hidden}.screen img{width:100%;height:100%;object-fit:contain;display:block}.controls,.markers{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:16px 0}button{background:#252c38;color:#e8ecf5;border:1px solid #424d61;border-radius:7px;padding:10px 14px;font:inherit;cursor:pointer}button:hover{background:#354158}button:disabled{opacity:.5;cursor:wait}#play{background:#a9c9ff;color:#0f2340;border-color:#a9c9ff;min-width:88px}#seek{width:100%;accent-color:#a9c9ff}#clock{font-variant-numeric:tabular-nums;min-width:164px}#status{color:#a9c9ff;font-size:13px}label{display:flex;align-items:center;gap:8px}small{color:#9ca6b8}.notice{border-left:2px solid #4c658c;padding-left:12px}
+</style>
+<main><header><h1>科大讯飞 · 工程预览</h1><button id="reload">载入最新画面修改</button></header>
+<div class="screen"><img id="frame" alt="正在加载当前画面"></div>
+<div class="controls"><button id="play" disabled>播放</button><button id="prev" title="左方向键">上一帧</button><button id="next" title="右方向键">下一帧</button><span id="clock">00:00.000</span><label>音量 <input id="volume" type="range" min="0" max="1" step=".05" value=".7"></label><span id="status" role="status">正在载入工程</span></div>
+<input id="seek" aria-label="时间线" type="range" min="0" max="260" step=".033333" value="0">
+<div class="markers" id="markers"><small>检查修改点</small></div>
+<p class="notice">预览目标 24 帧/秒，无需导出视频。暂停时显示原尺寸画面；画面生成速度不足时会跳帧，声音连续播放。检查细节可暂停并逐帧查看。</p>
+<p><small id="audioNote">节奏与声音修订：缩短留白，精简音效，平滑换曲，结尾取消定格。</small></p>
+<audio id="audio" preload="metadata"></audio></main>
+<script>
+const $=id=>document.getElementById(id), a=$('audio'), slider=$('seek'), img=$('frame');
+let meta, pos=0, busy=false, displayed='', objectURL, generation=0;
+let frameTimes=[];
+const fmt=t=>`${String(Math.floor(t/60)).padStart(2,'0')}:${(t%60).toFixed(3).padStart(6,'0')}`;
+function clock(){slider.value=pos;$('clock').textContent=`${fmt(pos)} / ${fmt(meta?.duration||0)}`;}
+function pause(){a.pause();frameTimes=[];$('play').textContent='播放';}
+function seek(t){pause();generation++;pos=Math.max(0,Math.min((meta?.duration||0)-1/(meta?.fps||30),t));if(meta?.audio_ready)a.currentTime=pos;clock();requestFrame();}
+async function requestFrame(){
+ if(!meta||busy)return;
+ const still=a.paused, n=Math.round(pos*meta.fps), key=`${generation}:${n}:${still}`;
+ if(key===displayed)return;
+ busy=true;const g=generation;
+ try{
+  const r=await fetch(`/frame?t=${n/meta.fps}&still=${still?1:0}`);if(!r.ok)throw Error(await r.text());
+  const blob=await r.blob();
+  if(g===generation){const old=objectURL;objectURL=URL.createObjectURL(blob);img.src=objectURL;if(old)URL.revokeObjectURL(old);displayed=key;
+   const now=performance.now();frameTimes=frameTimes.filter(t=>now-t<2000);frameTimes.push(now);
+   const actual=frameTimes.length>1?((frameTimes.length-1)*1000/(now-frameTimes[0])).toFixed(1):'测量中';
+   $('status').textContent=still?'已显示当前帧 · 24 帧/秒时间线':`目标 24 帧/秒 · 实际 ${actual}${actual==='测量中'?'':' 帧/秒'}`;}
+ }catch(e){$('status').textContent='画面加载失败：'+e.message;}finally{busy=false;}
+}
+async function setup(reload=false){
+ pause();$('reload').disabled=true;$('play').disabled=true;$('status').textContent=reload?'正在载入最新画面':'正在载入工程';
+ try{const r=await fetch(reload?'/reload':'/metadata',reload?{method:'POST'}:{});if(!r.ok)throw Error(await r.text());meta=await r.json();pos=Math.max(0,Math.min(pos,meta.duration-1/meta.fps));
+  $('markers').replaceChildren();for(const mark of meta.markers||[]){const b=document.createElement('button');b.textContent=mark.label;b.onclick=()=>seek(mark.time);$('markers').appendChild(b);}
+  generation++;displayed='';slider.max=meta.duration-1/meta.fps;slider.step=1/meta.fps;
+  if(meta.audio_ready){const src=`/audio?v=${meta.audio_stamp}`;if(a.getAttribute('src')!==src){a.src=src;a.load();}a.currentTime=pos;$('play').disabled=false;}
+  else $('audioNote').textContent='音轨与当前时间线尚未匹配 可先拖动画面检查 需要更新混音后再播放';
+  clock();requestFrame();
+ }catch(e){$('status').textContent=e.message;}finally{$('reload').disabled=false;}
+}
+$('play').onclick=async()=>{if(!a.paused){pause();return;}try{a.currentTime=pos;await a.play();$('play').textContent='暂停';}catch(e){$('status').textContent='声音无法播放：'+e.message;}};
+$('prev').onclick=()=>seek(pos-1/meta.fps);$('next').onclick=()=>seek(pos+1/meta.fps);
+slider.oninput=()=>seek(Number(slider.value));$('reload').onclick=()=>setup(true);
+$('volume').oninput=()=>a.volume=Number($('volume').value);a.volume=.7;
+document.querySelectorAll('[data-time]').forEach(b=>b.onclick=()=>seek(Number(b.dataset.time)));
+document.onkeydown=e=>{if(e.target.tagName==='INPUT')return;if(e.code==='Space'){e.preventDefault();$('play').click();}if(e.code==='ArrowLeft'){e.preventDefault();$('prev').click();}if(e.code==='ArrowRight'){e.preventDefault();$('next').click();}};
+a.onended=()=>{pause();pos=Math.min(a.currentTime,meta.duration-1/meta.fps);clock();};
+let lastTick=0;
+function tick(now){
+ const interval=1000/(meta?.fps||24);
+ if(now-lastTick>=interval){lastTick=now-(now-lastTick)%interval;if(!a.paused){pos=Math.min(a.currentTime,meta.duration-1/meta.fps);clock();}requestFrame();}
+ requestAnimationFrame(tick);
+}
+requestAnimationFrame(tick);
+setup();
+</script></html>

@@ -8,14 +8,19 @@ sys.argv = ['timeline.py', sys.argv[1], sys.argv[2]]
 OUT = sys.argv[2]
 HERE = os.path.dirname(os.path.abspath(__file__))
 # 口播停顿（只停在全屏画面上）：开场问题、最重的事实、向内/向外对比、论点大字、包袱、片名、转国内
-PAUSE_OVR = {1: 1.6, 8: 1.2, 11: 1.0, 13: 0.6, 15: 0.8, 17: 2.5, 18: 1.0, 25: 1.0, 36: 0.6, 47: 1.0, 50: 1.2, 60: 0.8, 70: 1.0}
+PAUSE_OVR = {1: 0.8, 8: 0.45, 11: 0.35, 13: 0.35, 15: 0.4, 17: 0.9, 18: 0.65,
+             25: 0.75, 36: 0.4, 47: 0.5, 50: 0.75, 60: 0.3, 70: 0.25, 71: 0.0}
+# 只轻提较慢的长口播；保留技术名词段和此前修好的英文、化工词头。
+ROW_SPEED = {6: 1.04, 16: 1.06, 19: 1.04}
+ROW_GAP_OVR = 0.16
+END_PAD = 0.0
 exec(open(os.path.join(HERE, 'timeline.py'), encoding='utf-8').read().split("if __name__ == '__main__':")[0])
 from v4 import *
 from v3 import badge_table
 import kongjing as KJ
 from hook import hook
 
-PRE = 1.6
+PRE = 0.9
 S = {s['i']: s for s in shots}
 def wt(i, word):
     s = S[i]; txt = s['text']; k = len(nchars(txt[:txt.index(word)])); return s['chars'][k][1]
@@ -138,7 +143,7 @@ NEQ_B = make_card(330, 150, 'rect', 22, INK, 0.45, '普通任务', title_size=56
 NEQ = shadow(text('≠', F_BLACK, 110, GOLD), 8, (0, 3), 160)
 def host(z0=1.0, cards=()):
     def fn(t):
-        s = next(x for x in shots if x['start'] <= t < x['end']); tl = t - s['start']
+        s = next((x for x in shots if x['start'] <= t < x['end']), shots[-1]); tl = t - s['start']
         f = zoom(cover(cam_frame(t), W, H).astype(np.float32), z0 + 0.03 * tl / s['dur'], 0.5, 0.35)
         for im, t0, x, y in cards:
             k = seg(t, t0, t0 + 0.3)
@@ -160,11 +165,15 @@ C_LST = make_card(150, 150, 'rect', 24, TEAL, 0.62, None, 'list', rim=0.5)
 W_IN = shadow(text('向内索取', F_BLACK, 104, WHITE, 0.08), 10, (0, 4), 180)
 W_OUT = shadow(glow_rgba(text('向外延伸', F_BLACK, 104, GOLD, 0.08), GOLD, 18, 0.4), 10, (0, 4), 180)
 
-def pip2(f, t, cx=250, cy=H - 255, d=320, u=1.0, out=0.0):
+def pip2(f, t, cx=220, cy=H - 260, d=240, u=1.0, out=0.0):
     if u <= 0 or out >= 1: return f
     d2 = int(d * back_out(u) * (1 - ease_in(out, 2)))
     if d2 < 8: return f
-    fr = cover(cam_frame(t), d2, d2, 0.5, 0.32)
+    # 圆窗只保留头肩，缩小外圈后仍能看清表情；全片共用这一构图。
+    src = cam_frame(t)
+    ih, iw = src.shape[:2]; side = int(min(ih * 0.66, iw))
+    x0 = (iw - side) // 2; y0 = int(ih * 0.035)
+    fr = cover(src[y0:y0 + side, x0:x0 + side], d2, d2)
     m = Image.new('L', (d2, d2), 0); ImageDraw.Draw(m).ellipse([2, 2, d2 - 3, d2 - 3], fill=255)
     im = Image.fromarray(np.dstack([fr, np.array(m)]).astype(np.uint8), 'RGBA')
     ring = Image.new('RGBA', (d2 + 10, d2 + 10), (0, 0, 0, 0)); ImageDraw.Draw(ring).ellipse([1, 1, d2 + 8, d2 + 8], outline=(255, 255, 255, 220), width=3)
@@ -287,21 +296,26 @@ def sub_now(t):
     if s is None or s['i'] in NO_SUB or t > s['chars'][-1][1] + 0.45: return ''      # 说完就收字幕
     return sub_at(t)
 
-TAIL = 1.2                                   # 片尾：最后一句说完后画面渐黑、配乐尾音放完
+TAIL = 0.05  # 最后一句后仅留 0.21 秒；源视频仍有真实动作，不定格延长
+END_FADE = 0.45
 def frame(t_out):
-    fade = min(1.0, max(0.0, (PRE + TOTAL + TAIL - t_out) / 2.2))
-    if fade < 1.0: return frame_(min(t_out, PRE + TOTAL - 0.02)) * fade
-    return frame_(t_out)
+    fade = ease(seg(PRE + TOTAL + TAIL - t_out, 0, END_FADE))
+    return frame_(t_out) * fade
 def frame_(t_out):
     t = t_out - PRE; CUR_T[0] = max(t, 0)
     if t < 0: return hook(t - EV['voice_in'], dict(human=EV['human'] - EV['voice_in'], gongke=EV['boom'] - EV['voice_in']))
-    s = next(x for x in shots if x['start'] <= t < x['end'])
+    s = next((x for x in shots if x['start'] <= t < x['end']), shots[-1])
     f = vis_of(s['i'])(t)
     for c in CUTS + ['bridge']:
         if c in QUIET: continue
         t0 = EV[c]
         if 0 <= t - t0 < 0.2: f = whip(f, 1 - (t - t0) / 0.2)
         if 0 < t0 - t < 0.1: f = whip(f, (0.1 - (t0 - t)) / 0.1 * 0.8)
+    # 品牌句 → 回顾段：两段出镜取景不同，用短暂淡过背景遮住跳切。
+    cut = EV['cut62']
+    if cut - 0.12 < t < cut + 0.16:
+        opacity = ease(seg(t, cut - 0.12, cut)) if t < cut else 1 - ease(seg(t, cut, cut + 0.16))
+        f = f * (1 - opacity) + BG * opacity
     subtitle(f, sub_now(t))
     return f
 
@@ -314,8 +328,24 @@ MUSD = os.path.join(REPO, '音乐素材', '旧库') + '/'      # 旧库里用到
 def load(p):
     subprocess.run(['ffmpeg', '-v', 'error', '-y', '-i', p, '-vn', '-ac', '2', '-ar', str(SR), f'{OUT}/_t.wav'], check=True)
     with wave.open(f'{OUT}/_t.wav') as w: return np.frombuffer(w.readframes(w.getnframes()), np.int16).reshape(-1, 2).astype(np.float32) / 32768
-def peak_of(x): env = np.convolve(np.abs(x).mean(1), np.ones(441) / 441, 'same'); return env.argmax() / SR
+def smooth_audio(x, width):
+    width = max(1, int(width))
+    padded = np.pad(x, (width // 2, (width - 1) // 2))
+    cumulative = np.concatenate(([0.0], np.cumsum(padded, dtype=np.float64)))
+    return ((cumulative[width:] - cumulative[:-width]) / width).astype(np.float32)
+
+def peak_of(x): return smooth_audio(np.abs(x).mean(1), 441).argmax() / SR
 def db(x): return 20 * np.log10(np.sqrt((x ** 2).mean()) + 1e-9)
+
+def filter_audio(x, filters):
+    """保留浮点余量，滤波过程不先压成 16bit 或削波。"""
+    if not filters: return x
+    r = subprocess.run(['ffmpeg', '-v', 'error', '-f', 'f32le', '-ar', str(SR), '-ac', '2',
+                        '-i', 'pipe:0', '-af', filters, '-f', 'f32le', 'pipe:1'],
+                       input=x.astype('<f4').tobytes(), capture_output=True, check=True)
+    y = np.frombuffer(r.stdout, '<f4').reshape(-1, 2)
+    if len(y) != len(x): raise ValueError('音频滤波改变了样本长度')
+    return y.copy()
 
 # 配乐段落：(曲子, 曲内对齐点, 时间线对齐点, 从, 到)
 MUSIC = [dict(file='音乐/悬疑-Dance for me walls.mp3', src=21.09, at=EV['boom'], frm=EV['boom'] - 2.5, to=EV['bridge'] + 0.9, fin=0.4, fout=1.1, dip=EV['boom']),
@@ -347,41 +377,107 @@ if os.path.exists(os.path.join(HERE, 'sound.py')): exec(open(os.path.join(HERE, 
 
 def build_audio():
     RAW = {'vo': load(VO_WAV), 'cam': load(os.path.join(MAT, '口播', '1080-压缩版.mp4')), 'r20': load(os.path.join(MAT, '口播', '科大讯飞1024结尾-声音克隆.mp3'))}
+    for start, end, speed in globals().get('VOICE_TIGHTEN', []):
+        # 只重定时指定词尾，保留音高；腾出的源区间由 SOURCE_SKIPS 统一移除。
+        a, b = round(start * SR), round(end * SR)
+        count = round((end - start) * SR / speed)
+        result = subprocess.run(['ffmpeg', '-v', 'error', '-f', 'f32le', '-ar', str(SR),
+                                 '-ac', '2', '-i', 'pipe:0', '-af', f'atempo={speed},apad=whole_len={count},atrim=end_sample={count}',
+                                 '-f', 'f32le', 'pipe:1'], input=RAW['vo'][a:b].astype('<f4').tobytes(),
+                                capture_output=True, check=True)
+        tightened = np.frombuffer(result.stdout, '<f4').reshape(-1, 2)
+        assert len(tightened) == count
+        RAW['vo'][a:b] = 0
+        RAW['vo'][a:a + count] = tightened
+    phrase = globals().get('VOICE_PHRASE_TIGHTEN')
+    if phrase:
+        # 先保留此前的词内压缩与去空白，再整句保音高加速；画面使用同一时间映射。
+        spans, cursor = [], phrase['start']
+        for left, right in phrase['gaps'] + [(phrase['end'], phrase['end'])]:
+            part = RAW['vo'][round(cursor * SR):round(left * SR)].copy()
+            if len(part):
+                fade = min(round(.003 * SR), len(part) // 2)
+                if cursor != phrase['start']: part[:fade] *= np.linspace(0, 1, fade)[:, None]
+                if left != phrase['end']: part[-fade:] *= np.linspace(1, 0, fade)[:, None]
+                spans.append(part)
+            cursor = right
+        count = round(phrase['duration'] * SR)
+        result = subprocess.run(['ffmpeg', '-v', 'error', '-f', 'f32le', '-ar', str(SR), '-ac', '2',
+                                 '-i', 'pipe:0', '-af', f"atempo={phrase['speed']},apad=whole_len={count},atrim=end_sample={count}",
+                                 '-f', 'f32le', 'pipe:1'], input=np.concatenate(spans).astype('<f4').tobytes(),
+                                capture_output=True, check=True)
+        tightened = np.frombuffer(result.stdout, '<f4').reshape(-1, 2)
+        assert len(tightened) == count
+        a, b = round(phrase['start'] * SR), round(phrase['end'] * SR)
+        RAW['vo'][a:b] = 0
+        RAW['vo'][a:a + count] = tightened
     def rms_src(src): return np.sqrt(np.mean(np.concatenate([RAW[src][int(a * SR):int(b * SR)] for a, b, o, sr in audio_pieces if sr == src]) ** 2))
     GN = {k: rms_src('vo') / rms_src(k) for k in ('vo', 'cam', 'r20')}       # 三种录音响度对齐
     N = int((DUR + 0.5) * SR); voice = np.zeros((N, 2), np.float32)
-    for a0, a1, o, sr in audio_pieces:
-        x = RAW[sr][int(a0 * SR):int(a1 * SR)] * GN[sr]; i = int((o + PRE) * SR); n = min(len(x), N - i)
-        fd = np.ones(n, np.float32); k = int(0.025 * SR); fd[:k] = np.linspace(0, 1, k); fd[-k:] = np.linspace(1, 0, k)
+    for piece_index, (a0, a1, o, sr) in enumerate(audio_pieces):
+        x = RAW[sr][round(a0 * SR):round(a1 * SR)] * GN[sr]
+        speed = audio_speeds.get(o, 1.0)
+        count = round((a1 - a0) * SR / speed)
+        if speed != 1.0:
+            result = subprocess.run(['ffmpeg', '-v', 'error', '-f', 'f32le', '-ar', str(SR), '-ac', '2',
+                                     '-i', 'pipe:0', '-af', f'atempo={speed},apad=whole_len={count},atrim=end_sample={count}',
+                                     '-f', 'f32le', 'pipe:1'], input=x.astype('<f4').tobytes(), capture_output=True, check=True)
+            x = np.frombuffer(result.stdout, '<f4').reshape(-1, 2)
+        i = round((o + PRE) * SR); n = min(len(x), N - i)
+        joined_in = piece_index > 0 and abs(audio_pieces[piece_index - 1][2] + (audio_pieces[piece_index - 1][1] - audio_pieces[piece_index - 1][0]) / audio_speeds.get(audio_pieces[piece_index - 1][2], 1.0) - o) < 1 / SR
+        joined_out = piece_index + 1 < len(audio_pieces) and abs(o + (a1 - a0) / speed - audio_pieces[piece_index + 1][2]) < 1 / SR
+        ki, ko = int((0.003 if joined_in else 0.025) * SR), int((0.003 if joined_out else 0.025) * SR)
+        fd = np.ones(n, np.float32); fd[:ki] = np.linspace(0, 1, ki); fd[-ko:] = np.linspace(1, 0, ko)
         voice[i:i + n] += x[:n] * fd[:, None]
-    vmask = np.abs(voice).mean(1) > 0; v_db = db(voice[vmask])
-    act = np.convolve(np.abs(voice).mean(1), np.ones(int(0.05 * SR)) / int(0.05 * SR), 'same') > 10 ** ((v_db - 25) / 20)
-    env = np.zeros(N, np.float32); e = 0.0; up, dn = 1 / (0.06 * SR), 1 / (0.35 * SR); hold = int(0.45 * SR); last = -10 ** 9
-    for k in range(N):                               # 说话间换气（<0.45 秒）不抬音乐，避免一呼一吸地起伏
+    voice = filter_audio(voice, globals().get('VOICE_FILTER'))
+    vmask = np.abs(voice).mean(1) > 1e-7; v_db = db(voice[vmask])
+    act = smooth_audio(np.abs(voice).mean(1), .05 * SR) > 10 ** ((v_db - 25) / 20)
+    env = np.zeros(N, np.float32); e = 0.0; up, dn = 1 / (0.12 * SR), 1 / (0.8 * SR); hold = int(0.6 * SR); last = -10 ** 9
+    for k in range(N):                               # 说话间换气（<0.6 秒）不抬音乐，避免一呼一吸地起伏
         if act[k]: last = k
         e = min(1.0, e + up) if k - last < hold else max(0.0, e - dn); env[k] = e
     hostm = np.zeros(N, np.float32)                     # 真人出镜时段（音乐再压低一档）
     for s_ in shots:
-        if s_['i'] in globals().get('HOST_SHOTS', set()): hostm[int((PRE + s_['start']) * SR):int((PRE + s_['end']) * SR)] = 1.0
-    hostm = np.convolve(hostm, np.ones(int(0.3 * SR)) / int(0.3 * SR), 'same').astype(np.float32)
+        if s_['i'] in globals().get('HOST_SHOTS', set()):
+            # 真人后的章节卡 / 国内转场不再沿用真人的低配乐档。
+            end = min(s_['end'], last_voice(s_['i'])) if s_['i'] in (18, 25, 50) else s_['end']
+            hostm[int((PRE + s_['start']) * SR):int((PRE + end) * SR)] = 1.0
+    hostm = smooth_audio(hostm, .6 * SR)
     music = np.zeros((N, 2), np.float32)
     for m in MUSIC:
-        tr = load(m['file'] if m['file'].startswith('/') else MUSD + m['file']); r0 = m.get('ref', m['src']); m_db = db(tr[int(r0 * SR):int((r0 + 20) * SR)])   # 响度参考段
-        o0 = PRE + m['frm']; s0 = m['src'] - (m['at'] - m['frm']); n = int((m['to'] - m['frm']) * SR)
-        x = tr[int(s0 * SR):int(s0 * SR) + n].copy(); i0 = int(o0 * SR)
-        fi, fo = int(m['fin'] * SR), int(m['fout'] * SR); x[:fi] *= np.linspace(0, 1, fi)[:, None]; x[-fo:] *= np.linspace(1, 0, fo)[:, None]
-        dips = m.get('dip'); dips = [] if dips is None else dips if isinstance(dips, list) else [dips]
-        for dp in dips:   # 重击前 0.25 秒配乐让开
-            g0, g1 = int((dp - 0.25 - m['frm']) * SR), int((dp - 0.02 - m['frm']) * SR); x[g0:g1] *= np.linspace(1, 0.05, g1 - g0)[:, None] ** 0.5
+        tr = load(m['file'] if m['file'].startswith('/') else MUSD + m['file'])
+        o0 = PRE + m['frm']; s0 = m['src'] - (m['at'] - m['frm']); n = round((m['to'] - m['frm']) * SR)
+        source_start = round(s0 * SR)
+        if source_start < 0 or source_start + n > len(tr):
+            raise ValueError(f"配乐素材长度不足：{m['file']} {s0:.2f}s + {n / SR:.2f}s")
+        x = filter_audio(tr[source_start:source_start + n].copy(), globals().get('MUSIC_DYNAMICS'))
+        m_db = db(x)  # 用实际播放段归一，避免不相关的参考段带来换曲电平跳变
+        i0 = round(o0 * SR)
+        fi, fo = min(len(x), round(m['fin'] * SR)), min(len(x), round(m['fout'] * SR))
+        # 相邻段同长交叉淡化：sin/cos 等功率，交接处不出现音量坑。
+        x[:fi] *= np.sin(np.linspace(0, np.pi / 2, fi))[:, None]
+        x[-fo:] *= np.cos(np.linspace(0, np.pi / 2, fo))[:, None]
         gg = 10 ** ((v_db + m.get('gap', -5) - m_db) / 20); gu = 10 ** ((v_db + m.get('under', -12) - m_db) / 20); gh = 10 ** ((v_db + m.get('host', -12) - m_db) / 20)
         e_ = env[i0:i0 + len(x)]; h_ = hostm[i0:i0 + len(x)]
         gain = (gg + (gu - gg) * e_) * (1 - h_) + gh * h_          # 真人出镜整段压低，不随换气起伏
         music[i0:i0 + len(x)] += x * gain[:len(x), None]
+    music = filter_audio(music, globals().get('MUSIC_FILTER'))
     sfx = np.zeros((N, 2), np.float32); cache = {}; rep = []
     for name, te, key, gain in sfx_plan():
-        if key not in cache: y = load(MUSD + '音效/' + SFX[key]); cache[key] = (y / (np.abs(y).max() + 1e-9), peak_of(y))
-        y, pk = cache[key]; st = PRE + te - pk; i = int(st * SR); j0 = max(0, -i); i = max(0, i); n = min(len(y) - j0, N - i)
-        sfx[i:i + n] += y[j0:j0 + n] * gain * 0.5; rep.append((name, PRE + te, key))
+        if key not in cache:
+            y = load(MUSD + '音效/' + SFX[key])
+            pk = peak_of(y)
+            # 活跃部分 RMS 归一；转场比重击再低 4 dB，限制尖峰。
+            active = np.abs(y).mean(1) > np.abs(y).max() * .04
+            target = v_db - (12 if key in ('whoosh', 'swish', 'rise') else 8)
+            scale = min(10 ** ((target - db(y[active])) / 20), .35 / (np.abs(y).max() + 1e-9))
+            y *= scale
+            fade = min(round(.02 * SR), len(y) // 2)
+            y[:fade] *= np.linspace(0, 1, fade)[:, None]
+            y[-fade:] *= np.linspace(1, 0, fade)[:, None]
+            cache[key] = (y, pk)
+        y, pk = cache[key]; st = PRE + te - pk; i = round(st * SR); j0 = max(0, -i); i = max(0, i); n = min(len(y) - j0, N - i)
+        sfx[i:i + n] += y[j0:j0 + n] * gain; rep.append((name, PRE + te, key))
     return voice, music, sfx, rep, v_db, vmask
 
 if mode == 'stills':
@@ -419,9 +515,32 @@ if mode in ('audio', 'check'):
         wv = vmask[a:b]; mm = music[a:b]; mv = np.abs(mm).mean(1) > 0
         print(f'人声 {v_db:.1f} dB；说话时配乐 {db(mm[wv & mv]):.1f} dB；停顿时配乐 {db(mm[~wv & mv]):.1f} dB')
     if mode == 'audio':
-        mix = np.clip(voice + music + sfx, -1, 1)
+        mix = voice + music + sfx
+        # 先留余量，再做响度归一；不能先 clip 再归一，否则失真已写入。
+        peak = float(np.abs(mix).max())
+        mix *= min(1.0, 0.90 / max(peak, 1e-9))
         with wave.open(f'{OUT}/full_raw.wav', 'wb') as w:
             w.setnchannels(2); w.setsampwidth(2); w.setframerate(SR); w.writeframes((mix * 32767).astype(np.int16).tobytes())
-        subprocess.run(['ffmpeg', '-v', 'error', '-y', '-i', f'{OUT}/full_raw.wav', '-af', 'loudnorm=I=-14:TP=-1.5', '-ar', '44100', f'{OUT}/full_audio.wav'], check=True)
+        first = subprocess.run(['ffmpeg', '-hide_banner', '-nostats', '-i', f'{OUT}/full_raw.wav',
+                                '-af', 'loudnorm=I=-14:TP=-1.5:LRA=11:print_format=json', '-f', 'null', '-'],
+                               capture_output=True, text=True, check=True)
+        measured, _ = json.JSONDecoder().raw_decode(first.stderr[first.stderr.rfind('{'):])
+        af = ('loudnorm=I=-14:TP=-1.5:LRA=11:linear=true:'
+              f"measured_I={measured['input_i']}:measured_TP={measured['input_tp']}:"
+              f"measured_LRA={measured['input_lra']}:measured_thresh={measured['input_thresh']}:"
+              f"offset={measured['target_offset']}")
+        subprocess.run(['ffmpeg', '-v', 'error', '-y', '-i', f'{OUT}/full_raw.wav', '-af', af, '-ar', '44100', f'{OUT}/full_audio.wav'], check=True)
+        with open(f'{OUT}/响度测量.json', 'w') as f:
+            json.dump(dict(pre_normalization=measured, float_mix_peak=peak,
+                           voice_db=float(v_db), music_under_voice_db=float(db(music[vmask])),
+                           music_sections=len(MUSIC), sfx_events=rep,
+                           music_handoffs=[dict(time=PRE + (left['to'] + right['frm']) / 2,
+                               overlap=left['to'] - right['frm'],
+                               rms_before=float(db(music[round((PRE + right['frm'] - .5) * SR):round((PRE + right['frm']) * SR)])),
+                               rms_mid=float(db(music[round((PRE + (left['to'] + right['frm']) / 2 - .25) * SR):round((PRE + (left['to'] + right['frm']) / 2 + .25) * SR)])),
+                               rms_after=float(db(music[round((PRE + left['to']) * SR):round((PRE + left['to'] + .5) * SR)])))
+                               for left, right in zip(MUSIC, MUSIC[1:])],
+                           sfx_peak=float(np.abs(sfx).max()),
+                           voice_peak=float(np.abs(voice).max())), f, ensure_ascii=False, indent=2)
         subprocess.run(['ffmpeg', '-v', 'error', '-y', '-ss', f'{A_OUT}', '-to', f'{B_OUT}', '-i', f'{OUT}/full_audio.wav', f'{OUT}/win_audio.wav'], check=True)
         print('audio ok')

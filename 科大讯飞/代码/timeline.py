@@ -11,13 +11,58 @@ import kongjing as KJ
 ALIGN = sys.argv[1] if len(sys.argv) > 1 else 'align.json'
 VO_WAV = os.path.join(MAT, '口播', '非出镜美化.wav')
 SUB_FIX = {'科研院所': '研究院所', '蛋白质设计项目': '蛋白质实验项目', '还没找到': '还没有找到', '科学家做什么？': '科学家做什么呢？'}   # 按实际念的出字幕
-ROW_GAP, LEAD, TAIL = 0.30, 0.10, 0.32
+ROW_GAP, LEAD, TAIL = globals().get('ROW_GAP_OVR', 0.30), 0.10, 0.32
+ROW_SPEED = globals().get('ROW_SPEED', {})
 
 def nchars(s): return [m.group(0) for m in re.finditer(r'[一-鿿]|[A-Za-z]+|\d+(?:\.\d+)?', s)]
 
 # ---------------------------------------------------------------- 1. 时间线：每行用真实录音（画外音 wav / 出镜视频），按字卡点
 import difflib
 takes = json.load(open(ALIGN))
+# 英文整体词的 ASR 时间落在词中部；按原录音波形校正词头。
+VOICE_HEADS = {8.95: 9.01, 18.50: 18.60}
+for tk in takes:
+    if tk['src'] == 'vo' and tk['a'] in VOICE_HEADS:
+        assert tk['chars'][0][0].lower() == 'openai'
+        tk['chars'][0][3] = VOICE_HEADS[tk['a']]
+
+# 对局部拖音做保音高压缩；混音时在同样的源坐标应用，随后移除腾出的空隙。
+VOICE_TIGHTEN = [(21.80, 22.30, 1.20), (152.43, 152.725, 1.20)]
+for tk in takes:
+    if tk['src'] == 'vo':
+        for ch in tk['chars']:
+            for a, b, speed in VOICE_TIGHTEN:
+                if a <= ch[3] < b:
+                    ch[3] = a + (ch[3] - a) / speed
+                    break
+SOURCE_SKIPS = {'vo': [(21.80 + .50 / 1.20, 22.375),
+                       (152.43 + .295 / 1.20, 152.765),
+                       (153.18, 153.41)]}  # “化工”接“任务”：收掉 230 ms 空白，保留字尾与词头
+# 在已经收紧的连读基础上再缩短整句 0.5 秒；首个“支”字保持原位。
+phrase_start, phrase_end = 152.05, 154.35
+phrase_gaps = [(a, b) for a, b in SOURCE_SKIPS['vo'] if phrase_start <= a < b <= phrase_end]
+phrase_before = phrase_end - phrase_start - sum(b - a for a, b in phrase_gaps)
+phrase_after = phrase_before - .5
+VOICE_PHRASE_TIGHTEN = dict(start=phrase_start, end=phrase_end, gaps=phrase_gaps,
+                            duration=phrase_after, speed=phrase_before / phrase_after)
+for tk in takes:
+    if tk['src'] == 'vo':
+        for ch in tk['chars']:
+            if phrase_start <= ch[3] < phrase_end:
+                elapsed = ch[3] - phrase_start - sum(max(0, min(ch[3], b) - a) for a, b in phrase_gaps)
+                ch[3] = phrase_start + elapsed / VOICE_PHRASE_TIGHTEN['speed']
+SOURCE_SKIPS['vo'] = [gap for gap in SOURCE_SKIPS['vo'] if gap not in phrase_gaps] + [(phrase_start + phrase_after, phrase_end)]
+def removed_time(src, a, b):
+    return sum(max(0.0, min(b, y) - max(a, x)) for x, y in SOURCE_SKIPS.get(src, []))
+
+def source_ranges(src, a, b):
+    cursor = a
+    for x, y in SOURCE_SKIPS.get(src, []):
+        if y <= cursor or x >= b: continue
+        if cursor < x: yield cursor, min(x, b)
+        cursor = max(cursor, y)
+    if cursor < b: yield cursor, b
+
 SKIP_ROWS = set()                      # 第 20 行已补录（声音克隆）
 SHOTS = [(i, s) for i, s in enumerate(SH, 1) if s[0] not in SKIP_ROWS]
 rows = sorted({s[0] for _, s in SHOTS})
@@ -34,8 +79,10 @@ for tk in takes:
 for r in row_takes: row_takes[r] = [tk for _, tk in sorted(row_takes[r], key=lambda x: x[0])]
 
 shots, audio_pieces = [], []          # audio_pieces: (源起, 源止, 输出起, 源)
+audio_speeds = {}  # 输出片段起点 → 保音高倍速，画面和逐字字幕共用
 t = 0.0
 for r in rows:
+    speed = ROW_SPEED.get(r, 1.0)
     rs = [(i, x) for i, x in SHOTS if x[0] == r]
     said = [(c, tk['src'], ct, n) for n, tk in enumerate(row_takes[r]) for c, _, _, ct in tk['chars']]
     script, owner = [], []
@@ -60,11 +107,32 @@ for r in rows:
             pieces.append((p0, m, cuts.get(m, 0.08 if m < len(said) else 0))); p0 = m
     out_t = [0.0] * len(said)
     row0 = t
+    previous_end = None
     for a, b, gap in pieces:
         a0 = said[a][2] - LEAD; a1 = said[b - 1][2] + TAIL
-        audio_pieces.append((a0, a1, t, said[a][1]))
-        for m in range(a, b): out_t[m] = t + (said[m][2] - a0)
-        t = t + (a1 - a0) + gap
+        if a == 0 and re.fullmatch(r'[A-Za-z]+', said[a][0]):
+            a0 = max(a0, row_takes[r][said[a][3]]['a'])
+        elif a and said[a][3] != said[a - 1][3] and re.fullmatch(r'[A-Za-z]+', said[a][0]):
+            a0 = max(a0, row_takes[r][said[a][3]]['a'])
+        # 同一 take 被停顿拆开时，共用一个源切点，避免把下一句的
+        # 「支」等音节提前带进前段，再在后段重复播放。
+        if previous_end is not None and a and said[a][3] == said[a - 1][3]:
+            a0 = max(a0, previous_end)
+        if b < len(said) and said[b][3] == said[b - 1][3]:
+            boundary = said[b][2] - 0.04
+            # 英文对齐时间代表词起点；Science 的词尾超过固定 0.32 秒。
+            if re.fullmatch(r'[A-Za-z]+', said[b - 1][0]):
+                a1 = boundary
+            else:
+                a1 = min(a1, boundary)
+        previous_end = a1
+        src = said[a][1]
+        for x, y in source_ranges(src, a0, a1):
+            o = t + (x - a0 - removed_time(src, a0, x)) / speed
+            audio_pieces.append((x, y, o, src))
+            audio_speeds[o] = speed
+        for m in range(a, b): out_t[m] = t + (said[m][2] - a0 - removed_time(src, a0, said[m][2])) / speed
+        t = t + (a1 - a0 - removed_time(src, a0, a1)) / speed + gap
     for j, (i, x) in enumerate(rs):
         ks = [k for k in range(len(script)) if owner[k] == j]
         ch = [(script[k], out_t[mp[k]]) for k in ks]
@@ -72,7 +140,7 @@ for r in rows:
         shots.append(dict(i=i, row=r, text=x[1].strip(), start=st, chars=ch, kind=x[2], vo=True, pause=x[8] or 0))
     t += rs[-1][1][8] or 0
     t += ROW_GAP
-TOTAL = t + 0.8
+TOTAL = t + globals().get('END_PAD', 0.8)
 for a, b in zip(shots, shots[1:]): a['end'] = b['start']
 shots[-1]['end'] = TOTAL
 for x in shots: x['dur'] = x['end'] - x['start']
@@ -83,8 +151,13 @@ def src_at(t, src='cam'):
     best = None
     for a0, a1, o, sr in audio_pieces:
         if sr != src: continue
-        if o <= t <= o + (a1 - a0): return a0 + (t - o)
-        d = min(abs(t - o), abs(t - o - (a1 - a0)))
+        speed = audio_speeds.get(o, 1.0)
+        end = o + (a1 - a0) / speed
+        if o <= t <= end: return a0 + (t - o) * speed
+        # 结尾继续读取真实动作；上限小于原素材剩余 0.258 秒。
+        if src == 'cam' and (a0, a1, o, sr) == audio_pieces[-1] and 0 < t - end <= .22:
+            return a1 + (t - end) * speed
+        d = min(abs(t - o), abs(t - end))
         if best is None or d < best[0]: best = (d, a0 if t < o else a1)
     return best[1] if best else 0.0
 
@@ -122,13 +195,30 @@ def split_lines(txt, maxw=16.0):
         lines = lines[:-2] + [''.join(tk[:k + 1]), ''.join(tk[k + 1:])]
     return lines
 
+from caption_lines import CAPTION_LINES
+
+def caption_times(s, tokens):
+    # 校对后补字、同音字修正不会让后续字幕累计错位。
+    original = [c.lower() for c, _ in s['chars']]
+    times = np.full(len(tokens), np.nan)
+    matcher = difflib.SequenceMatcher(None, [c.lower() for c in tokens], original, autojunk=False)
+    for block in matcher.get_matching_blocks():
+        for k in range(block.size): times[block.a + k] = s['chars'][block.b + k][1]
+    known = np.flatnonzero(np.isfinite(times))
+    if not len(known): raise ValueError(f"字幕无法对齐：镜头 {s['i']}")
+    return np.interp(np.arange(len(times)), known, times[known]).tolist()
+
 SUBS = []
 for s in shots:
     if s['i'] in (13, 17, 36): continue                 # 大字时刻不出字幕（不重复大字）
     txt = s['text']
     for a, b in SUB_FIX.items(): txt = txt.replace(a, b)
-    lines = split_lines(txt.replace('\n', ''))
-    q = 0; times = [c[1] for c in s['chars']]
+    txt = txt.replace('表现的多优秀', '表现得多优秀')
+    lines = CAPTION_LINES[s['i']]
+    tokens = nchars(''.join(lines))
+    assert [c.lower() for c in tokens] == [c.lower() for c in nchars(txt)], f"字幕漏字或添字：{s['i']}"
+    assert not any(re.search(r'[，。？！；：、“”「」（）！？,!?;:"()]', line) for line in lines)
+    q = 0; times = caption_times(s, tokens)
     for ln in lines:
         n = len(nchars(ln)); t0 = times[min(q, len(times) - 1)] - 0.08; q += n
         SUBS.append([max(s['start'], t0), ln.rstrip('，。、；：'), s['i']])
