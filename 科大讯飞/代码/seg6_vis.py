@@ -65,7 +65,22 @@ def v6364(t):
 
 # ---------------------------------------------------------------- 65 / 71 真人
 def v65(t): return host(1.0 if t < EV['but'] - 0.1 else 1.12)(t)
-def v71(t): return host(1.06 if t < EV['ordinary'] - 0.1 else 1.0)(t)
+EV['endcard'] = last_voice(71)                     # 最后一句说完 → 收尾画面
+END_DUST = np.random.default_rng(71).uniform(0, 1, (220, 4))
+def endcard(t):
+    """收尾：暖金背景 + 缓慢上浮的光点 + 「AI for Science」金属大字扫光，全程在动"""
+    q = t - EV['endcard']; f = BG67.copy(); lay = np.zeros((H, W, 3), np.float32)
+    for (x, y, s_, c) in END_DUST:
+        p = (int(x * W + 30 * math.sin(q * 0.8 + c * 6)), int((y * H - q * (25 + 60 * s_)) % H))
+        cv2.circle(lay, p, 1 + int(3 * s_), (np.array(GOLD if c > 0.35 else ICE) * (0.25 + 0.55 * s_)).tolist(), -1, cv2.LINE_AA)
+    f += lay + cv2.GaussianBlur(lay, (0, 0), 5) * 0.8
+    u = ease_out(seg(q, 0.0, 0.6))
+    put(f, sweep(T_AFS, seg(q, 0.5, 1.8)), W / 2, H / 2 - 10, u, scale=(0.92 + 0.08 * u) * (1 + 0.02 * q))
+    return f
+def v71(t):
+    if t < EV['endcard']: return host(1.06 if t < EV['ordinary'] - 0.1 else 1.0)(t)
+    k = ease(seg(t, EV['endcard'], EV['endcard'] + 0.35))
+    return endcard(t) if k >= 1 else host(1.0)(t) * (1 - k) + endcard(t) * k
 
 # ---------------------------------------------------------------- 66 / 70 活动页（横幅已补成 16:9）
 IMG9 = img('9'); BG9 = bg_gild(backdrop=cover(IMG9, W, H), dim=0.12, key='p9')
@@ -129,4 +144,4 @@ SFX_MORE += [(f'回顾卡{k + 1}', EV[e], 'thud', 0.13) for k, e in enumerate(('
 STILLS = [('62 回顾', EV['r_prot'] + 0.6), ('63 书', EV['more'] + 0.3), ('63 变灰', last_voice(63) - 0.1), ('64 循环', EV['s3'] + 0.3),
           ('64 转圈', S[64]['end'] - 0.4), ('65', EV['but'] + 1.0), ('66 1024', S[66]['start'] + 3.0), ('67 空镜', EV['real'] - 1.0),
           ('67 真实场景', EV['real'] + 1.0), ('68 场景', EV['sc'][4] + 0.4), ('69 着落', EV['land'] + 0.2), ('70 左', S[70]['start'] + 1.0),
-          ('70 右', S[70]['start'] + 6.5), ('71', EV['ordinary'] + 0.5), ('71 结束', TOTAL + PRE - 0.5 - PRE + 0.0)]
+          ('70 右', S[70]['start'] + 6.5), ('71', EV['ordinary'] + 0.5), ('收尾 0.5s', EV['endcard'] + 0.5), ('收尾 2s', EV['endcard'] + 2.0), ('最后一帧', TOTAL + TAIL - 0.05)]

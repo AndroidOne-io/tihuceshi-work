@@ -11,7 +11,8 @@ import kongjing as KJ
 ALIGN = sys.argv[1] if len(sys.argv) > 1 else 'align.json'
 VO_WAV = os.path.join(MAT, '口播', '非出镜美化.wav')
 SUB_FIX = {'科研院所': '研究院所', '蛋白质设计项目': '蛋白质实验项目', '还没找到': '还没有找到', '科学家做什么？': '科学家做什么呢？'}   # 按实际念的出字幕
-ROW_GAP, LEAD, TAIL = 0.30, 0.10, 0.32
+ROW_GAP, LEAD, TAIL = 0.15, 0.10, 0.32           # 行间空隙 0.30 → 0.15（客户反馈：留白短一点）
+SPEED = globals().get('SPEED', {'vo': 1.0, 'cam': 1.08, 'r20': 1.08})   # 真人出镜、声音克隆提速 8%，和画外音语速拉平（音调不变，出镜画面同步）
 
 def nchars(s): return [m.group(0) for m in re.finditer(r'[一-鿿]|[A-Za-z]+|\d+(?:\.\d+)?', s)]
 
@@ -33,7 +34,7 @@ for tk in takes:
         if u and u in rt: row_takes.setdefault(r, []).append((rt.index(u), tk)); break
 for r in row_takes: row_takes[r] = [tk for _, tk in sorted(row_takes[r], key=lambda x: x[0])]
 
-shots, audio_pieces = [], []          # audio_pieces: (源起, 源止, 输出起, 源)
+shots, audio_pieces = [], []          # audio_pieces: (源起, 源止, 输出起, 源)；在成片里的长度 = (源止-源起)/SPEED[源]
 t = 0.0
 for r in rows:
     rs = [(i, x) for i, x in SHOTS if x[0] == r]
@@ -63,8 +64,9 @@ for r in rows:
     for a, b, gap in pieces:
         a0 = said[a][2] - LEAD; a1 = said[b - 1][2] + TAIL
         audio_pieces.append((a0, a1, t, said[a][1]))
-        for m in range(a, b): out_t[m] = t + (said[m][2] - a0)
-        t = t + (a1 - a0) + gap
+        k = SPEED[said[a][1]]
+        for m in range(a, b): out_t[m] = t + (said[m][2] - a0) / k
+        t = t + (a1 - a0) / k + gap
     for j, (i, x) in enumerate(rs):
         ks = [k for k in range(len(script)) if owner[k] == j]
         ch = [(script[k], out_t[mp[k]]) for k in ks]
@@ -83,8 +85,9 @@ def src_at(t, src='cam'):
     best = None
     for a0, a1, o, sr in audio_pieces:
         if sr != src: continue
-        if o <= t <= o + (a1 - a0): return a0 + (t - o)
-        d = min(abs(t - o), abs(t - o - (a1 - a0)))
+        k = SPEED[sr]; L = (a1 - a0) / k
+        if o <= t <= o + L: return a0 + (t - o) * k
+        d = min(abs(t - o), abs(t - o - L))
         if best is None or d < best[0]: best = (d, a0 if t < o else a1)
     return best[1] if best else 0.0
 

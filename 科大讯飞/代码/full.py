@@ -8,7 +8,7 @@ sys.argv = ['timeline.py', sys.argv[1], sys.argv[2]]
 OUT = sys.argv[2]
 HERE = os.path.dirname(os.path.abspath(__file__))
 # 口播停顿（只停在全屏画面上）：开场问题、最重的事实、向内/向外对比、论点大字、包袱、片名、转国内
-PAUSE_OVR = {1: 1.6, 8: 1.2, 11: 1.0, 13: 0.6, 15: 0.8, 17: 2.5, 18: 1.0, 25: 1.0, 36: 0.6, 47: 1.0, 50: 1.2, 60: 0.8, 70: 1.0}
+PAUSE_OVR = {1: 1.0, 8: 0.6, 11: 0.4, 13: 0.4, 15: 0.4, 17: 1.2, 18: 0.5, 25: 0.6, 36: 0.4, 47: 0.6, 50: 0.6, 60: 0.4, 70: 0.5, 71: 1.6}   # 客户反馈：留白短一点（合计 14.3 → 7.4 秒）
 exec(open(os.path.join(HERE, 'timeline.py'), encoding='utf-8').read().split("if __name__ == '__main__':")[0])
 from v4 import *
 from v3 import badge_table
@@ -289,13 +289,12 @@ def sub_now(t):
 
 TAIL = 1.2                                   # 片尾：最后一句说完后画面渐黑、配乐尾音放完
 def frame(t_out):
-    fade = min(1.0, max(0.0, (PRE + TOTAL + TAIL - t_out) / 2.2))
-    if fade < 1.0: return frame_(min(t_out, PRE + TOTAL - 0.02)) * fade
-    return frame_(t_out)
+    fade = min(1.0, max(0.0, (PRE + TOTAL + TAIL - t_out) / 1.4))     # 收尾画面一直在动，最后 1.4 秒渐黑（不再定格）
+    return frame_(t_out) * fade if fade < 1.0 else frame_(t_out)
 def frame_(t_out):
     t = t_out - PRE; CUR_T[0] = max(t, 0)
     if t < 0: return hook(t - EV['voice_in'], dict(human=EV['human'] - EV['voice_in'], gongke=EV['boom'] - EV['voice_in']))
-    s = next(x for x in shots if x['start'] <= t < x['end'])
+    s = next((x for x in shots if x['start'] <= t < x['end']), shots[-1])
     f = vis_of(s['i'])(t)
     for c in CUTS + ['bridge']:
         if c in QUIET: continue
@@ -316,6 +315,14 @@ def load(p):
     with wave.open(f'{OUT}/_t.wav') as w: return np.frombuffer(w.readframes(w.getnframes()), np.int16).reshape(-1, 2).astype(np.float32) / 32768
 def peak_of(x): env = np.convolve(np.abs(x).mean(1), np.ones(441) / 441, 'same'); return env.argmax() / SR
 def db(x): return 20 * np.log10(np.sqrt((x ** 2).mean()) + 1e-9)
+def lufs(x):
+    """EBU R128 积分响度（ffmpeg ebur128），用来统一各段配乐和人声的听感响度"""
+    with wave.open(f'{OUT}/_l.wav', 'wb') as w:
+        w.setnchannels(2); w.setsampwidth(2); w.setframerate(SR); w.writeframes((np.clip(x, -1, 1) * 32767).astype(np.int16).tobytes())
+    r = subprocess.run(['ffmpeg', '-hide_banner', '-nostats', '-i', f'{OUT}/_l.wav', '-af', 'ebur128', '-f', 'null', '-'], capture_output=True, text=True).stderr
+    import re as _re
+    v = _re.findall(r'I:\s+(-?[\d.]+) LUFS', r)
+    return float(v[-1]) if v else db(x)
 
 # 配乐段落：(曲子, 曲内对齐点, 时间线对齐点, 从, 到)
 MUSIC = [dict(file='音乐/悬疑-Dance for me walls.mp3', src=21.09, at=EV['boom'], frm=EV['boom'] - 2.5, to=EV['bridge'] + 0.9, fin=0.4, fout=1.1, dip=EV['boom']),
@@ -346,34 +353,44 @@ def sfx_plan():
 if os.path.exists(os.path.join(HERE, 'sound.py')): exec(open(os.path.join(HERE, 'sound.py'), encoding='utf-8').read())   # 整片声音规划覆盖上面的默认值
 
 def build_audio():
-    RAW = {'vo': load(VO_WAV), 'cam': load(os.path.join(MAT, '口播', '1080-压缩版.mp4')), 'r20': load(os.path.join(MAT, '口播', '科大讯飞1024结尾-声音克隆.mp3'))}
-    def rms_src(src): return np.sqrt(np.mean(np.concatenate([RAW[src][int(a * SR):int(b * SR)] for a, b, o, sr in audio_pieces if sr == src]) ** 2))
+    def load_k(p, k):                                  # 整条录音按 SPEED 变速（atempo 保持音调）；片段 [a0,a1] 对应变速后的 [a0/k, a1/k]
+        if abs(k - 1) < 1e-6: return load(p)
+        subprocess.run(['ffmpeg', '-v', 'error', '-y', '-i', p, '-vn', '-ac', '2', '-ar', str(SR), '-af', f'atempo={k}', f'{OUT}/_t.wav'], check=True)
+        with wave.open(f'{OUT}/_t.wav') as w: return np.frombuffer(w.readframes(w.getnframes()), np.int16).reshape(-1, 2).astype(np.float32) / 32768
+    RAW = {'vo': load_k(VO_WAV, SPEED['vo']), 'cam': load_k(os.path.join(MAT, '口播', '1080-压缩版.mp4'), SPEED['cam']),
+           'r20': load_k(os.path.join(MAT, '口播', '科大讯飞1024结尾-声音克隆.mp3'), SPEED['r20'])}
+    def rms_src(src): return np.sqrt(np.mean(np.concatenate([RAW[src][int(a / SPEED[sr] * SR):int(b / SPEED[sr] * SR)] for a, b, o, sr in audio_pieces if sr == src]) ** 2))
     GN = {k: rms_src('vo') / rms_src(k) for k in ('vo', 'cam', 'r20')}       # 三种录音响度对齐
     N = int((DUR + 0.5) * SR); voice = np.zeros((N, 2), np.float32)
     for a0, a1, o, sr in audio_pieces:
-        x = RAW[sr][int(a0 * SR):int(a1 * SR)] * GN[sr]; i = int((o + PRE) * SR); n = min(len(x), N - i)
+        k = SPEED[sr]; x = RAW[sr][int(a0 / k * SR):int(a1 / k * SR)] * GN[sr]; i = int((o + PRE) * SR); n = min(len(x), N - i)
         fd = np.ones(n, np.float32); k = int(0.025 * SR); fd[:k] = np.linspace(0, 1, k); fd[-k:] = np.linspace(1, 0, k)
         voice[i:i + n] += x[:n] * fd[:, None]
-    vmask = np.abs(voice).mean(1) > 0; v_db = db(voice[vmask])
+    vmask = np.abs(voice).mean(1) > 0; v_db = db(voice[vmask]); v_lufs = lufs(voice)     # 配乐按听感响度（LUFS）对齐人声
     act = np.convolve(np.abs(voice).mean(1), np.ones(int(0.05 * SR)) / int(0.05 * SR), 'same') > 10 ** ((v_db - 25) / 20)
-    env = np.zeros(N, np.float32); e = 0.0; up, dn = 1 / (0.06 * SR), 1 / (0.35 * SR); hold = int(0.45 * SR); last = -10 ** 9
+    env = np.zeros(N, np.float32); e = 0.0; up, dn = 1 / (0.15 * SR), 1 / (0.6 * SR); hold = int(0.45 * SR); last = -10 ** 9
     for k in range(N):                               # 说话间换气（<0.45 秒）不抬音乐，避免一呼一吸地起伏
         if act[k]: last = k
         e = min(1.0, e + up) if k - last < hold else max(0.0, e - dn); env[k] = e
     hostm = np.zeros(N, np.float32)                     # 真人出镜时段（音乐再压低一档）
     for s_ in shots:
         if s_['i'] in globals().get('HOST_SHOTS', set()): hostm[int((PRE + s_['start']) * SR):int((PRE + s_['end']) * SR)] = 1.0
-    hostm = np.convolve(hostm, np.ones(int(0.3 * SR)) / int(0.3 * SR), 'same').astype(np.float32)
+    hostm = np.convolve(hostm, np.ones(int(0.6 * SR)) / int(0.6 * SR), 'same').astype(np.float32)
     music = np.zeros((N, 2), np.float32)
     for m in MUSIC:
-        tr = load(m['file'] if m['file'].startswith('/') else MUSD + m['file']); r0 = m.get('ref', m['src']); m_db = db(tr[int(r0 * SR):int((r0 + 20) * SR)])   # 响度参考段
+        tr = load(m['file'] if m['file'].startswith('/') else MUSD + m['file'])
         o0 = PRE + m['frm']; s0 = m['src'] - (m['at'] - m['frm']); n = int((m['to'] - m['frm']) * SR)
-        x = tr[int(s0 * SR):int(s0 * SR) + n].copy(); i0 = int(o0 * SR)
+        pad = max(0, -int(s0 * SR)); x = np.concatenate([np.zeros((pad, 2), np.float32), tr[max(0, int(s0 * SR)):max(0, int(s0 * SR)) + n - pad]]); i0 = int(o0 * SR)   # 曲子开头之前补静音
+        m_db = lufs(x)                                   # 用实际用到的这一段测听感响度，各曲在同一档位听起来一样响
         fi, fo = int(m['fin'] * SR), int(m['fout'] * SR); x[:fi] *= np.linspace(0, 1, fi)[:, None]; x[-fo:] *= np.linspace(1, 0, fo)[:, None]
         dips = m.get('dip'); dips = [] if dips is None else dips if isinstance(dips, list) else [dips]
-        for dp in dips:   # 重击前 0.25 秒配乐让开
-            g0, g1 = int((dp - 0.25 - m['frm']) * SR), int((dp - 0.02 - m['frm']) * SR); x[g0:g1] *= np.linspace(1, 0.05, g1 - g0)[:, None] ** 0.5
-        gg = 10 ** ((v_db + m.get('gap', -5) - m_db) / 20); gu = 10 ** ((v_db + m.get('under', -12) - m_db) / 20); gh = 10 ** ((v_db + m.get('host', -12) - m_db) / 20)
+        dg = np.ones(len(x), np.float32)
+        for dp in dips:   # 重击：前 0.25 秒音乐压低约 10 dB 让出重击，之后 0.6 秒回来（不再整段断掉）
+            c = int((dp - m['frm']) * SR); a_, b_ = int(0.25 * SR), int(0.6 * SR)
+            if 0 <= c - a_ and c + b_ < len(x):
+                dg[c - a_:c] = np.minimum(dg[c - a_:c], np.linspace(1, 0.32, a_)); dg[c:c + b_] = np.minimum(dg[c:c + b_], np.linspace(0.32, 1, b_))
+        x *= dg[:, None]
+        gg = 10 ** ((v_lufs + m.get('gap', -8) - m_db) / 20); gu = 10 ** ((v_lufs + m.get('under', -17) - m_db) / 20); gh = 10 ** ((v_lufs + m.get('host', -24) - m_db) / 20)
         e_ = env[i0:i0 + len(x)]; h_ = hostm[i0:i0 + len(x)]
         gain = (gg + (gu - gg) * e_) * (1 - h_) + gh * h_          # 真人出镜整段压低，不随换气起伏
         music[i0:i0 + len(x)] += x * gain[:len(x), None]
